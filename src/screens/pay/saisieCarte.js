@@ -74,7 +74,7 @@ class saisieCarte extends React.Component {
 
     async _getCarteUuid(uuid) {
         this.setState({loading: true});
-
+        console.log("Mon token", this.props.token);
 
         fetch(host + "/cartes/uuid/"+uuid, {
             method: "GET",

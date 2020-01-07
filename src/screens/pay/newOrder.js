@@ -16,7 +16,7 @@ import CalculatorResponse from '../../components/calculator/CalculatorResponse';
 import CalculatorButtonsContainer from '../../components/calculator/CalculatorButtonsContainer';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import Fontisto from 'react-native-vector-icons/Fontisto';
-import _ from 'lodash';
+import * as _ from 'lodash';
 import Modal from "react-native-modalbox";
 import {Input, Icon, Button} from "react-native-elements";
 import { connect } from "react-redux";
@@ -72,7 +72,9 @@ class newOrder extends React.Component {
     async componentDidMount() {
         const { navigation } = this.props;
         const i = navigation.getParam('item', {});
-        this.setState({item: i, produits: i.produits});
+        console.log(i);
+        let produits =  _.sortBy(i.produits,"code");
+        this.setState({item: i, produits:produits});
     }
 
     componentWillUnmount() {
@@ -281,7 +283,7 @@ class newOrder extends React.Component {
                 <View style={styles.GridView} key={index}>
                     <View style={styles.inputGridUsed}>
                         <Text style={styles.textInputSelected}>{item.libelle}</Text>
-                        <Text style={styles.textInputSelected}>{item.num}</Text>
+                        <Text style={styles.textInputSelected}>{item.code}</Text>
                     </View>
                 </View>
             )
@@ -293,7 +295,7 @@ class newOrder extends React.Component {
                         this._selectItem(item, true)}}>
                         <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
                             <Text style={[styles.textInput, {color: '#fff'}]}>{item.libelle}</Text>
-                            <Text style={[styles.textInput, {color: '#fff'}]}>{item.num}</Text>
+                            <Text style={[styles.textInput, {color: '#fff'}]}>{item.code}</Text>
                         </View>
                     </TouchableOpacity>
                 </View>
@@ -304,7 +306,7 @@ class newOrder extends React.Component {
                 <View style={styles.GridView} key={index}>
                     <View style={styles.inputGridSelected}>
                         <Text style={styles.textInputSelected}>{item.libelle}</Text>
-                        <Text style={styles.textInputSelected}>{item.num}</Text>
+                        <Text style={styles.textInputSelected}>{item.code}</Text>
                     </View>
                 </View>
             )
@@ -770,35 +772,44 @@ const styles = StyleSheet.create({
     GridView: {
         alignItems: 'center',
         justifyContent: 'flex-start',
+        textAlign:'center',
+        textAlignVertical:'center',
         flex:1,
+        width:120,
         height: 80,
         elevation : 0,
     },
     inputGrid: {
         flex:1,
-        width:90, maxHeight:60,
+        width:120, maxHeight:60,
         borderRadius:6,
         alignItems: 'center',
         justifyContent: 'center',
+        textAlign:'center',
+        textAlignVertical:'center',
         elevation: 2,
         borderColor:'#e0e0e0', borderWidth:1
     },
     inputGridUsed: {
         flex:1,
-        width:90, maxHeight:60,
+        width:120, maxHeight:60,
         borderRadius:6,
         backgroundColor: '#e53935',
         alignItems: 'center',
         justifyContent: 'center',
+        textAlign:'center',
+        textAlignVertical:'center',
         elevation: 2
     },
     inputGridSelected: {
         flex:1,
-        width:90, maxHeight:60,
+        width:120, maxHeight:60,
         borderRadius:6,
         backgroundColor: '#03498e',
         alignItems: 'center',
         justifyContent: 'center',
+        textAlign:'center',
+        textAlignVertical:'center',
         elevation: 2
     },
     textInput: {

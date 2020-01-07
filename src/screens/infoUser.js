@@ -4,6 +4,7 @@ import { Avatar, Icon, Card } from 'react-native-elements';
 import Fontisto from "react-native-vector-icons/Fontisto";
 import ButtonHeader from "./../components/ButtonHeader";
 import { host } from "../utils/constants";
+import moment from "moment";
 
 const { width, height } = Dimensions.get('window');
 
@@ -26,7 +27,8 @@ export default class infoUser extends React.Component {
             loading: true,
             currentItem: {},
             opposition: false,
-            station: {}
+            station: {},
+            showErr: false
         };
     }
 
@@ -34,6 +36,8 @@ export default class infoUser extends React.Component {
         const { navigation } = this.props;
         const i = navigation.getParam('item', {});
         const s = navigation.getParam('station', {});
+        console.log(i);
+        this._checkRestrictions(i);
         let o = false;
       /*  if(i.dateOpposition.trim().length !== 0){
             o = true;
@@ -61,14 +65,64 @@ export default class infoUser extends React.Component {
             )
     };
 
+    _checkRestrictions(i){
+        let date = moment();
+        let hour = date.format("HH:mm");
+        let authorize = false;
+        i.restriction.forEach(element => {
+            switch (element.restrictionJour) {
+                case "LUNDI_VENREDI":
+                    if(date.day()>= 1 && date.day()<=5){
+                        var hDebut = [element.heure_debut.slice(0, 2), ":", element.heure_debut.slice(2)].join('');
+                        var hFin = [element.heure_fin.slice(0, 2), ":", element.heure_fin.slice(2)].join('');
+                        if(hour>= hDebut && hour<= hFin){
+                            authorize = true;
+                        }
+                    }
+                case "SAMEDI":
+                    if(date.day() === 6) {
+                        var hDebut = [element.heure_debut.slice(0, 2), ":", element.heure_debut.slice(2)].join('');
+                        var hFin = [element.heure_fin.slice(0, 2), ":", element.heure_fin.slice(2)].join('');
+                        if(hour>= hDebut && hour<= hFin){
+                            authorize = true;
+                        }
+                    }
+                case "DIMANCHE":
+                    if(date.day() === 7) {
+                        var hDebut = [element.heure_debut.slice(0, 2), ":", element.heure_debut.slice(2)].join('');
+                        var hFin = [element.heure_fin.slice(0, 2), ":", element.heure_fin.slice(2)].join('');
+                        if(hour>= hDebut && hour<= hFin){
+                            authorize = true;
+                        }
+                    }
+            }
+        });
+
+        if(authorize){
+            this.setState({showAuthErr: false});
+        }
+        else {
+            this.setState({showAuthErr: true});
+        }
+    }
+
     render() {
-        const { currentItem, loading } = this.state;
-        let color = "#4caf50";
+        const { currentItem, loading, showAuthErr } = this.state;
+        let color = "#4caf50", text="", showErr=false;
 
         if (currentItem.status !== "ACTIVE" ) {
-            color = "#e53935"
+            color = "#e53935";
         }
-
+        else if(currentItem.solde <=0){
+            color = "#e53935";
+            showErr = true;
+            text = "Cette carte n'est pas approvionnée !"
+        }
+        else if(showAuthErr){
+            color = "#e53935";
+            showErr = true;
+            text = "Cette carte n'est pas authorisé dans cette période !"
+        }
         return (
             <View style={{flex:1, backgroundColor:'#fafafa'}}>
                 <View style={{width:"94%", height:1, backgroundColor: "#bdbdbd", marginLeft:'3%', marginTop:'6%'}}/>
@@ -79,6 +133,8 @@ export default class infoUser extends React.Component {
                 }
                 {!loading &&
                     <View style={{flex: 1, marginTop: '2%', alignItems: 'center'}}>
+                        { showErr &&  <Text style={{textAlign: 'center', color: '#e53935', fontSize: 16, fontFamily:'Livvic-Regular'}}>
+                            {text} </Text>}
                         <Card containerStyle={{width: "80%", height: height / 1.5, alignItems: 'center', borderRadius: 6 }}>
                             <View style={{flex: 1, backgroundColor:color, justifyContent:'center', alignItems:'center'}}>
                                 <Avatar size="large" rounded overlayContainerStyle={{backgroundColor: '#fff'}}
@@ -152,7 +208,8 @@ export default class infoUser extends React.Component {
                                     </View>
                         </View>
                         </Card>
-                        <View style={{flex:1,width:"100%", justifyContent:'center', alignItems:'flex-end'}}><ButtonHeader item={currentItem}/></View>
+                        <View style={{flex:1,width:"100%", justifyContent:'center', alignItems:'flex-end'}}>{!showErr && <ButtonHeader item={currentItem}/> }
+                        </View>
                     </View>
                 }
             </View>
