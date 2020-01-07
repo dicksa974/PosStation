@@ -1,0 +1,5 @@
+XSym
+0069
+8c125c61ffa086d30d5ec8389bb663fe
+../../../../../node_modules/react-native-camera/ios/RN/RNFileSystem.h
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          

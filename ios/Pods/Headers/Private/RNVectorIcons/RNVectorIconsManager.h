@@ -1,0 +1,5 @@
+XSym
+0097
+f2a7d97a8fb7a85b4edc45030bd21bd8
+../../../../../node_modules/react-native-vector-icons/RNVectorIconsManager/RNVectorIconsManager.h
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              

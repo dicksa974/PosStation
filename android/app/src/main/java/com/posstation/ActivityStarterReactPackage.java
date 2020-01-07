@@ -1,0 +1,35 @@
+package com.posstation;
+
+import com.facebook.react.uimanager.ViewManager;
+
+import com.facebook.react.ReactPackage;
+import com.facebook.react.bridge.NativeModule;
+import com.facebook.react.bridge.ReactApplicationContext;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import androidx.annotation.NonNull;
+
+/**
+ * Exposes {@link ActivityStarterModule} and {@link EventEmitterModule}  to JavaScript.
+ * One {@link ReactPackage} can expose any number of {@link NativeModule}s.
+ */
+final class ActivityStarterReactPackage implements ReactPackage {
+
+    @NonNull
+    @Override
+    public List<NativeModule> createNativeModules(@NonNull ReactApplicationContext reactContext) {
+        List<NativeModule> modules = new ArrayList<>();
+        modules.add(new ActivityStarterModule(reactContext));
+        modules.add(new EventEmitterModule(reactContext));
+        return modules;
+    }
+
+    @NonNull
+    @Override
+    public List<ViewManager> createViewManagers(@NonNull ReactApplicationContext reactContext) {
+        return Collections.emptyList();
+    }
+}

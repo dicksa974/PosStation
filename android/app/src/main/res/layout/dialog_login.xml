@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="10dp">
+
+    <EditText
+        android:id="@+id/username"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:hint="username"/>
+
+    <EditText
+        android:id="@+id/password"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/username"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:hint="password"
+        android:inputType="textPassword"
+        app:layout_constraintTop_toBottomOf="@id/username"/>
+
+    <CheckBox
+        android:id="@+id/check_keep_pwd"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        app:layout_constraintTop_toBottomOf="@id/password"/>
+
+    <TextView
+        android:id="@+id/text_note"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        android:text="记住密码"
+        app:layout_constraintBaseline_toBaselineOf="@id/check_keep_pwd"
+        app:layout_constraintLeft_toRightOf="@id/check_keep_pwd"/>
+</android.support.constraint.ConstraintLayout>

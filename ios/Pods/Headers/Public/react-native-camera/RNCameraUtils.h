@@ -1,0 +1,5 @@
+XSym
+0070
+3eae6cef3efd9cccb5be04d381fbe1a8
+../../../../../node_modules/react-native-camera/ios/RN/RNCameraUtils.h
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         

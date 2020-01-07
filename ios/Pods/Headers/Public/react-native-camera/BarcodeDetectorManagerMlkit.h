@@ -1,0 +1,5 @@
+XSym
+0084
+b442ced5e112e7fc7fea6846499b6973
+../../../../../node_modules/react-native-camera/ios/RN/BarcodeDetectorManagerMlkit.h
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           

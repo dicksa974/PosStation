@@ -1,0 +1,5 @@
+XSym
+0076
+bd2a924044fe5c9b677ed38d4677e7d4
+../../../../../node_modules/react-native-camera/ios/RN/TextDetectorManager.h
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   

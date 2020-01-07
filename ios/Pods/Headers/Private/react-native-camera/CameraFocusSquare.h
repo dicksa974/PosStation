@@ -1,0 +1,5 @@
+XSym
+0075
+64a84a4689ca5331347431401a21a4a6
+../../../../../node_modules/react-native-camera/ios/RCT/CameraFocusSquare.h
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    

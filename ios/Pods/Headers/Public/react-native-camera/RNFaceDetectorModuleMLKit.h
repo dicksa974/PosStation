@@ -1,0 +1,5 @@
+XSym
+0082
+0c8cfbe1603c5f7d7b4ffe321a86ab32
+../../../../../node_modules/react-native-camera/ios/RN/RNFaceDetectorModuleMLKit.h
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             

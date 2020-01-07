@@ -1,0 +1,5 @@
+XSym
+0081
+b5a679470410e6aa398b0acb0c60b1ae
+../../../../../node_modules/react-native-camera/ios/RN/FaceDetectorManagerMlkit.h
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              

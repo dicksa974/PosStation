@@ -1,0 +1,5 @@
+XSym
+0069
+ad27ff017e420087640a66559ff45940
+../../../../../node_modules/react-native-camera/ios/RN/RNImageUtils.h
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          

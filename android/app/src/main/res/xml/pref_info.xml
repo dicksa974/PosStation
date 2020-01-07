@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <SwitchPreference
+        android:defaultValue="false"
+        android:key="@string/key_show_log"
+        android:summaryOff="@string/summary_off"
+        android:summaryOn="@string/summary_on"
+        android:title="@string/pref_show_log"/>
+    <Preference
+        android:key="@string/key_init"
+        android:title="@string/pref_init"/>
+    <Preference
+        android:key="@string/key_disconnect"
+        android:title="@string/pref_disconnect"/>
+    <Preference
+        android:key="@string/key_update_time"
+        android:title="@string/pref_update_time"/>
+    <Preference
+        android:key="@string/key_update_firmware"
+        android:title="@string/pref_update_firmware"/>
+    <Preference
+        android:key="@string/key_pid"
+        android:title="@string/pref_pid"/>
+    <Preference
+        android:key="@string/key_sn"
+        android:title="@string/pref_sn"/>
+    <Preference
+        android:key="@string/key_firmware_ver"
+        android:title="@string/pref_firmware_ver"/>
+    <Preference
+        android:key="@string/key_base_sdk_ver"
+        android:title="@string/pref_base_sdk_ver"/>
+    <Preference
+        android:key="@string/key_sdk_ver"
+        android:title="@string/pref_sdk_ver"/>
+</PreferenceScreen>

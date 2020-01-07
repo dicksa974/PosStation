@@ -1,0 +1,5 @@
+XSym
+0074
+0da56e3e0c5c58ee03729863f234a2e2
+../../../../../node_modules/react-native-camera/ios/RCT/RCTCameraManager.h
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
