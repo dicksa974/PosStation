@@ -45,7 +45,7 @@ class saisieActivationCarte extends React.Component {
         headerTitle:
           <View style={{flex:1, flexDirection:'row'}}>
               <Image source={require('../../../assets/images/iconx96.jpg')} style={{width:55, height:55, borderRadius:8, marginTop:10}} resizeMode={"contain"}/>
-              <Text style={{color:'#03498e', fontSize:20, marginLeft:15, fontFamily:'Livvic-Medium', textAlignVertical:'center'}}>SAISIE DE CARTE</Text>
+              <Text style={{color:'#03498e', fontSize:20, marginLeft:15, fontFamily:'Livvic-Medium', textAlignVertical:'center', marginTop:10}}>SAISIE DE CARTE</Text>
           </View>,
         headerTransparent: true
     });
@@ -84,7 +84,7 @@ class saisieActivationCarte extends React.Component {
         }).then((response) => {
             console.log("activation carte",response);
             if(response.status === 200) {
-                activityStarter.showPinPadText('Bienvenu');
+                activityStarter.showPinPadText("O'Card - Bienvenue");
                 response.json().then(data => {
                     console.log("get carte", data);
                     this.setState({ loading: false, carte: data });
@@ -492,7 +492,7 @@ class saisieActivationCarte extends React.Component {
                               }}
                               title="Sans contact"
                               buttonStyle={{backgroundColor:'#9e9e9e'}}
-                              onPress={() => activityStarter.FuncM1((carte) => {this._getCarteUuid(carte)})}
+                              onPress={() => activityStarter.AutoCard((carte) => {this._getCarteUuid(carte)})}
                             />
                         </View>
                         <View style={{width:"80%", height:85}}>

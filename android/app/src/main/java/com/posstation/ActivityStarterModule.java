@@ -6,6 +6,9 @@ import android.app.Dialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.widget.Toast;
 
 import com.facebook.react.ReactInstanceManager;
@@ -17,6 +20,7 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.bridge.UiThreadUtil;
 import com.facebook.react.bridge.WritableNativeArray;
 import com.posstation.utils.PermissionsManager;
 import com.zcs.sdk.DriverManager;
@@ -25,6 +29,8 @@ import com.zcs.sdk.bluetooth.BluetoothManager;
 import Lib.FWReader.S8.function_S8;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import static com.facebook.react.bridge.UiThreadUtil.runOnUiThread;
 
 class ActivityStarterModule extends ReactContextBaseJavaModule {
 
@@ -39,7 +45,13 @@ class ActivityStarterModule extends ReactContextBaseJavaModule {
     public static final char UI_UPDATE_MSG_TEXT_APPEND = 4;
     private function_S8 call_s8;
 
+    public String resultScan = null;
+
     AutoTestThread mAutoThread= null;
+
+    OnScanThread onScanThread;
+
+    public Handler mHandler;
 
 
     ActivityStarterModule(ReactApplicationContext reactContext) {
@@ -50,6 +62,98 @@ class ActivityStarterModule extends ReactContextBaseJavaModule {
     @Override
     public String getName() {
         return "ActivityStarter";
+    }
+
+    @ReactMethod
+    void AutoCard(@NonNull Callback callback){
+        String devPath = "/dev/ttySAC2";
+        int baud = 115200;
+        resultScan = null;
+
+        Activity activity = getCurrentActivity();
+        call_s8 = new function_S8(activity);
+        call_s8.SetTransPara(0x40,1155,22352);
+        UiThreadUtil.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+
+                try {
+                    gl_autoRunning = 1;
+                    gl_autoRun = 1;
+
+                    int i = 0;
+
+                    do{
+                        Thread.sleep(500);//50
+                        if(1 == gl_singleTestInAutoRunning)
+                            continue;
+                        int result = 0, hdev=1;
+                        char[] pModVer = new char[512];
+                        char[] pSnrM1 = new char[255];
+                        short tblk = 24;
+                        short tSec = (short)(tblk/4);
+                        short keymode = 0;
+                        char[] defKey = {0xff,0xff,0xff,0xff,0xff,0xff};
+
+                        gl_singleTestInAutoRunning = 1;
+
+                        if(struct_portType == PT_USB)hdev = call_s8.fw_init_ex(2, null, 0);
+                        else hdev = call_s8.fw_init_ex (1, devPath.toCharArray(), baud);
+                        call_s8.fw_lcd_dispclear(hdev);
+                        String str = "PRESENTEZ CARTE";
+
+                        // Creating array of string length
+                        char[] ch = new char[256];
+
+                        // Copy character by character into array
+                        for (int n = 0; n < str.length(); n++) {
+                            ch[n] = str.charAt(n);
+                        }
+
+                        call_s8.fw_lcd_dispstr(hdev, ch);
+
+                        if (hdev != -1){
+
+//                            call_s8.fw_beep(hdev, 5);
+
+                            result = call_s8.fw_getver(hdev, pModVer);
+                            if(0 == result){
+                                call_s8.fw_load_key(hdev, keymode, tSec, defKey);
+                                result = call_s8.fw_card_str(hdev, (short)1, pSnrM1);
+                                if(0 == result){
+                                    resultScan = String.valueOf(pSnrM1);
+                                    gl_autoRunning = 0;
+                                    call_s8.fw_lcd_dispclear(hdev);
+                                }
+
+                            }
+
+                        } else {
+                            // error
+                        }
+
+                        i++;
+
+                        call_s8.fw_exit(hdev);
+
+                        gl_singleTestInAutoRunning = 0;
+                        //Instructions
+                    }while(i < 20 && gl_autoRunning == 1);
+                    if(resultScan == null){
+                        resultScan = "rien";
+                    }
+
+                    callback.invoke(resultScan);
+
+                } catch (Exception e) {
+                    // TODO Auto-generated catch block
+                    SendUIMessage(UI_UPDATE_MSG_TEXT_APPEND, "ERREUR SCAN");
+                    e.printStackTrace();
+                }
+
+            }
+        });
+
     }
 
     @ReactMethod
@@ -114,6 +218,82 @@ class ActivityStarterModule extends ReactContextBaseJavaModule {
 
     }
 
+    private void onScan(){
+        gl_autoRunning = 1;
+        Thread scan = new Thread(new Runnable() {
+
+            Message message;
+
+            @Override
+            public void run() {
+                Looper.prepare();
+
+                mHandler = new Handler(){
+                    public void handleMessa(Message msg){
+                        SendUIMessage(UI_UPDATE_MSG_TEXT_APPEND, "test");
+                    }
+                };
+
+                Looper.loop();
+
+
+
+                try {
+                    for (int i = 0; i < 5; i++){
+                        while(gl_autoRunning == 1){
+                            Thread.sleep(500);//50
+
+                        }
+                        Thread.sleep(1000);
+
+                        message = mHandler.obtainMessage();
+                        mHandler.sendMessage(message);
+
+                    }
+
+                } catch (Throwable t){
+
+                }
+            }
+        });
+        gl_autoRunning =0;
+        scan.start();
+    }
+
+    private class OnScanThread extends Thread{
+
+        static final int MSG1 = 1;
+        static final int MSG2 = 2;
+
+
+        @Override
+        public void run() {
+            Looper.prepare();
+            mHandler = new scanHandler();
+            Looper.loop();
+        }
+
+        private class scanHandler extends Handler{
+            @Override
+            public void handleMessage(Message msg) {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(getReactApplicationContext(), "Test", Toast.LENGTH_LONG).show();
+                        SendUIMessage(UI_UPDATE_MSG_TEXT_APPEND, "Message 1");
+                    }
+                });
+            }
+        }
+    }
+
+
     private class AutoTestThread extends Thread {
 
         int hdev=1;
@@ -141,7 +321,7 @@ class ActivityStarterModule extends ReactContextBaseJavaModule {
 
                     gl_singleTestInAutoRunning = 1;
 
-                    Toast.makeText(getReactApplicationContext(), "mpos", Toast.LENGTH_LONG).show();
+                    SendUIMessage(UI_UPDATE_MSG_TEXT_APPEND, "SUCCESS SCAN");
                     TestM1(struct_portType, devPath, baud);
 
                     gl_singleTestInAutoRunning = 0;
@@ -152,6 +332,7 @@ class ActivityStarterModule extends ReactContextBaseJavaModule {
 
             } catch (Exception e) {
                 // TODO Auto-generated catch block
+                SendUIMessage(UI_UPDATE_MSG_TEXT_APPEND, "ERREUR SCAN");
                 e.printStackTrace();
             }
         }
@@ -668,7 +849,6 @@ class ActivityStarterModule extends ReactContextBaseJavaModule {
                 SendUIMessage(UI_UPDATE_MSG_TEXT_APPEND,"-");
                 SendUIMessage(UI_UPDATE_MSG_TEXT_APPEND,"Module Version: " + String.valueOf(pModVer));
 
-
                 call_s8.fw_load_key(hdev, keymode, tSec, defKey);
 
                 result = call_s8.fw_card_str(hdev, (short)1, pSnrM1);
@@ -676,6 +856,9 @@ class ActivityStarterModule extends ReactContextBaseJavaModule {
                 {
                     SendUIMessage(UI_UPDATE_MSG_TEXT_APPEND,"_card:ok ");
                     SendUIMessage(UI_UPDATE_MSG_TEXT_APPEND,String.valueOf(pSnrM1));
+                    gl_autoRunning = 0;
+
+                    resultScan = String.valueOf(pSnrM1);
 
                     call_s8.fw_lcd_dispclear(hdev);
 
@@ -1014,7 +1197,7 @@ class ActivityStarterModule extends ReactContextBaseJavaModule {
     }
 
     private void SendUIMessage(char toWhat, String text) {
-        // Toast.makeText(getReactApplicationContext(), text, Toast.LENGTH_LONG).show();
+         Toast.makeText(getReactApplicationContext(), text, Toast.LENGTH_LONG).show();
 
     }
 

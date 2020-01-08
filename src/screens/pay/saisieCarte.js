@@ -87,7 +87,7 @@ class saisieCarte extends React.Component {
             //console.log(response);
             if(response.status === 200) {
 
-                activityStarter.showPinPadText('Bienvenu');
+                activityStarter.showPinPadText("O'Card - Bienvenue");
                 response.json().then(data => {
                     //console.log(data);
                     this.setState({ loading: false });
@@ -300,7 +300,7 @@ class saisieCarte extends React.Component {
                                   }}
                                   title="Sans contact"
                                   buttonStyle={{backgroundColor:'#9e9e9e'}}
-                                  onPress={() => activityStarter.FuncM1((carte) => {this._getCarteUuid(carte)})}
+                                  onPress={() => activityStarter.AutoCard((carte) => {this._getCarteUuid(carte)})}
                                 />
                             </View>
                             <View style={{width:"80%", height:85}}>

@@ -24,14 +24,12 @@ const { width, height } = Dimensions.get('window');
 class saisieMontant extends React.Component {
 
     static navigationOptions = ({ navigation, screensProps }) => ({
-        headerLeft: <View style={{flex:1, flexDirection:'row', justifyContent:'center', alignItems:'center'}}>
-            <Icon type={'simple-line-icon'} name={'arrow-left'} color={'black'} onPress={ () => { navigation.goBack() }} containerStyle={{marginLeft:20}} />
-            <View style={{flex:1, flexDirection:'row', justifyContent:'center', alignItems:'center', marginLeft:15}}>
+        headerLeft: <Icon type={'simple-line-icon'} name={'arrow-left'} color={'black'} onPress={ () => { navigation.goBack() }}/>,
+        headerTitle:
+            <View style={{flex:1, flexDirection:'row'}}>
                 <Image source={require('../../../assets/images/iconx96.jpg')} style={{width:55, height:55, borderRadius:8, marginTop:10}} resizeMode={"contain"}/>
-                <Text style={{color:'#03498e', fontSize:18, fontFamily:'Livvic-Medium', marginLeft:15}}>MONVERT LINA</Text>
-            </View>
-        </View>,
-        headerTitle:<Text style={{color:'#03498e', fontSize:20, fontFamily:'Livvic-Medium', textAlignVertical:'center'}}>RECHARGER UNE CARTE</Text>,
+                <Text style={{color:'#03498e', fontSize:20, marginLeft:15, fontFamily:'Livvic-Medium', textAlignVertical:'center', marginTop:10}}>RECHARGER UNE CARTE</Text>
+            </View>,
         headerRight: <Icon type={'simple-line-icon'} name={'home'} color={'#03498e'} onPress={ () => { navigation.navigate("Home") }} containerStyle={{marginRight:20}} />,
         headerTransparent: true
     });
@@ -243,11 +241,13 @@ class saisieMontant extends React.Component {
             }).then((response) => {
                 console.log(response);
                 if (response.status === 200) {
+                    this.refs.modalAsk.close();
                     this.refs.modalConfirm.open();
                 } else {
+                    this.refs.modalAsk.close();
                     this.refs.modalError.open()
                 }
-            }).catch(error => this.refs.modalError.open());
+            }).catch(error => {this.refs.modalAsk.close(); this.refs.modalError.open()});
         }else {
             this.setState({showPinErr: true});
         }
@@ -293,7 +293,7 @@ class saisieMontant extends React.Component {
                         </View>
                         <View style={{flex:1, flexDirection:'row', justifyContent:'space-around', alignItems:'flex-end', marginBottom:10, marginTop:5}}>
                             <TouchableOpacity style={{width: 135, height: 45, backgroundColor:'green', justifyContent:'center', alignItems:'center', borderRadius:5}}
-                                              onPress={() => { this.refs.modalAsk.close(); this._rechargeCarte();} }>
+                                              onPress={() => { this._rechargeCarte();} }>
                                 <Text style={{fontFamily:'Livvic-Regular', color:'#fff', fontSize:16}}>Confirmer</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={{width: 135, height: 45, marginLeft:20,  backgroundColor:'red', justifyContent:'center', alignItems:'center', borderRadius:5}}
@@ -402,6 +402,13 @@ const styles = StyleSheet.create({
         fontFamily:'Livvic-Regular',
         color:'#fff'
     },
+    textError: {
+        marginHorizontal: 30,
+        textAlign: 'center',
+        color: '#e53935',
+        fontSize: 16,
+        fontFamily:'Livvic-Regular'
+    }
 });
 
 const mapStateToProps = (state) => {
