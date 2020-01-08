@@ -139,7 +139,7 @@ export default class infoUser extends React.Component {
                             <View style={{flex: 1, backgroundColor:color, justifyContent:'center', alignItems:'center'}}>
                                 <Avatar size="large" rounded overlayContainerStyle={{backgroundColor: '#fff'}}
                                 icon={{name: 'person', type: 'fontisto', color:'#9e9e9e'}} activeOpacity={0.7}/>
-                                <Text style={{fontSize: 16, fontFamily: 'Livvic-Regular', marginTop: 10, color:'#fff'}}>{currentItem.client.nom} {currentItem.client.prenom}</Text>
+                                <Text style={{fontSize: 16, fontFamily: 'Livvic-Regular', marginTop: 10, color:'#fff'}}>{currentItem.client.entreprise.enseigne}</Text>
                             </View>
                             <View style={{width: "90%", height: 1, backgroundColor: "#000", marginLeft: '2%'}}/>
                             <View style={{flex: 2, width: "100%", flexDirection:'row', justifyContent:'center', alignItems:'center'}}>

@@ -1,5 +1,14 @@
 import React from 'react';
-import { View, StyleSheet, ImageBackground, Dimensions, TouchableOpacity, Image, Text } from 'react-native';
+import {
+    View,
+    StyleSheet,
+    ImageBackground,
+    Dimensions,
+    TouchableOpacity,
+    Image,
+    Text,
+    ActivityIndicator
+} from 'react-native';
 import CalculatorResponse from '../../components/calculator/CalculatorResponse';
 import CalculatorButtonsContainer from '../../components/calculator/CalculatorButtonsContainer';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
@@ -8,6 +17,7 @@ import { Input, Icon } from "react-native-elements";
 import _ from 'lodash';
 import {host} from "../../utils/constants";
 import {connect} from "react-redux";
+import Fontisto from "react-native-vector-icons/Fontisto";
 
 const { width, height } = Dimensions.get('window');
 
@@ -38,6 +48,8 @@ class saisieMontant extends React.Component {
             carte: "",
             isResult: false,
             showErrMontant:false,
+            showPinErr:false,
+            pincode:""
         };
 
         this.refresh = this.refresh.bind(this);
@@ -209,34 +221,44 @@ class saisieMontant extends React.Component {
     }
 
     _rechargeCarte() {
-        let ticket = { carte: { id: this.state.carte.id }, transactions:[{ montant: this.state.total }], station: {id: "5ddfa08ecf4de44d374f313f"}, typeTicket: "RECHARGE"};
-        console.log(JSON.stringify(ticket));
+        if(this.state.pincode === "1234") {
+            this.setState({showPinErr: false});
 
-        fetch(host + "/tickets/charge", {
-            method: "POST",
-            headers: {
-                Accept : "application/json",
-                "Content-Type" : "application/json",
-                Authorization: "Bearer " + this.props.token
-            },
-            body: JSON.stringify(ticket)
-        }).then((response) => {
-            console.log(response);
-            if (response.status === 200) {
-                this.refs.modalConfirm.open();
-            }
-            else {
-                this.refs.modalError.open()
-            }
-        }).catch(error => this.refs.modalError.open() );
+            let ticket = {
+                carte: {id: this.state.carte.id},
+                transactions: [{montant: this.state.total}],
+                station: {id: "5ddfa08ecf4de44d374f313f"},
+                typeTicket: "RECHARGE"
+            };
+            console.log(JSON.stringify(ticket));
+
+            fetch(host + "/tickets/charge", {
+                method: "POST",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json",
+                    Authorization: "Bearer " + this.props.token
+                },
+                body: JSON.stringify(ticket)
+            }).then((response) => {
+                console.log(response);
+                if (response.status === 200) {
+                    this.refs.modalConfirm.open();
+                } else {
+                    this.refs.modalError.open()
+                }
+            }).catch(error => this.refs.modalError.open());
+        }else {
+            this.setState({showPinErr: true});
+        }
     }
 
     render() {
-        const { first, second, operator, result, showErrMontant } = this.state;
+        const { first, second, operator, result, showErrMontant, showPinErr } = this.state;
         let btn = "Valider";
         return(
             <View style={{flex:1, backgroundColor:'#fafafa'}}>
-                <Modal style={{ height: 300, width: 450, backgroundColor:'#fff', borderRadius:4, padding:5 }} position={"center"} ref={"modalAsk"} swipeToClose={false} backdropPressToClose={false} backdrop={true} >
+                <Modal style={{ height: 350, width: 450, backgroundColor:'#fff', borderRadius:4, padding:5 }} position={"center"} ref={"modalAsk"} swipeToClose={false} backdropPressToClose={false} backdrop={true} >
                     <View style={{flex: 1, justifyContent:'center', alignItems:'center'}}>
                         <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
                             <FontAwesome5 name={"question-circle"} color={"#fb8c00"} size={35} style={{marginTop:15}}/>
@@ -248,6 +270,25 @@ class saisieMontant extends React.Component {
                                     Confirmer le montant de {this.state.total.toFixed(2).replace('.',',')} € pour</Text>
                                 <Text style={{fontFamily: 'Livvic-Regular', color: '#757575', fontSize: 17, textAlign: 'center'}}>
                                     la carte n°{this.state.carte.serialNumber} ?</Text>
+                            </View>
+                            <View style={{flex: 1, width: 350, justifyContent: 'center'}}>
+                                <Input
+                                    label={'Pin Code Caisse'}
+                                    keyboardType={"number-pad"}
+                                    leftIcon={
+                                        <Fontisto
+                                            name='locked'
+                                            size={20}
+                                            color='#9e9e9e'
+                                            style={{marginRight: 10}}
+                                        />
+                                    }
+                                    autoFocus={true}
+                                    style={{marginTop: 20, marginLeft: 10}}
+                                    onChangeText={(value) => this.setState({pincode: value})}
+                                    value={`${this.state.pincode}`}
+                                />
+                                {showPinErr && <Text style={styles.textError}> Erreur Pin Code </Text>}
                             </View>
                         </View>
                         <View style={{flex:1, flexDirection:'row', justifyContent:'space-around', alignItems:'flex-end', marginBottom:10, marginTop:5}}>

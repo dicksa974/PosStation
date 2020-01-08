@@ -157,7 +157,6 @@ class saisieActivationCarte extends React.Component {
          }).catch(error =>  this.setState({ showError: true, loading: false }))
     };
 
-
     onEnterDigit = (num, index) => {
         const { code } = this.state;
         if (counter + 1 <= 6) {
@@ -390,7 +389,7 @@ class saisieActivationCarte extends React.Component {
                 <Modal style={{ height: 250, width: 400, backgroundColor:'#fff', borderRadius:4, padding:5 }} position={"center"} ref={"modalError"} swipeToClose={false} backdropPressToClose={false} backdrop={true} >
                     <View style={{flex: 1, justifyContent:'center', alignItems:'center'}}>
                         <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
-                            <FontAwesome5 name={"check-circle"} color={"green"} size={35} style={{marginTop:15}}/>
+                            <FontAwesome5 name={"check-circle"} color={"red"} size={35} style={{marginTop:15}}/>
                             <Text style={{fontFamily:'Livvic-Medium', color:'#757575', fontSize:22, marginTop:10}}>Erreur Carte !</Text>
                         </View>
                         <View style={{flex:2, justifyContent:'center', alignItems:'center', marginTop:20}}>
