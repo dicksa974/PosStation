@@ -80,7 +80,7 @@ class saisieRechargeCarte extends React.Component {
         }).then((response) => {
             console.log("recharge carte",response);
             if(response.status === 200) {
-                activityStarter.showPinPadText("O'Card - Bienvenue");
+                activityStarter.showPinPadText("Bienvenue");
                 response.json().then(data => {
                     console.log(data);
                     if(data.typePayement === "CARTE_PRE_PAYEE" && data.status === "ACTIVE"){

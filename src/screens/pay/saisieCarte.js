@@ -87,7 +87,7 @@ class saisieCarte extends React.Component {
             //console.log(response);
             if(response.status === 200) {
 
-                activityStarter.showPinPadText("O'Card - Bienvenue");
+                activityStarter.showPinPadText("Bienvenue");
                 response.json().then(data => {
                     //console.log(data);
                     this.setState({ loading: false });

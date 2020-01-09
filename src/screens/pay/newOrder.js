@@ -58,7 +58,7 @@ class newOrder extends React.Component {
             showErrMontant:false,
             showErrTotal:false,
             showPinErr: false,
-            tentative:0,
+            tentativePin:0,
             station: {},
             pincode:"",
             loadingPay: false
@@ -355,7 +355,6 @@ class newOrder extends React.Component {
     }
 
     _checkPincode (pin){
-
         if(this.state.item.solde > this.state.total) {
             if(pin !== null){
                 if(pin.trim() === "1234"){
@@ -461,7 +460,26 @@ class newOrder extends React.Component {
                 });
         }
         else{
-            this.setState({showPinErr: true})
+            if(this.state.tentativePin === 0 || this.state.tentativePin === 1 || this.state.tentativePin === 2){
+                this.setState({showPinErr: true, tentativePin: this.state.tentativePin+1});
+            }
+            else {
+                fetch(host + "/cartes/status/ERRPIN/"+this.state.item.id, {
+                    method: "PUT",
+                    headers: {
+                        Accept: "application/json",
+                        "Content-Type": "application/json",
+                        Authorization: "Bearer " + this.props.token
+                    }
+                })
+                    .then((res) => {
+                        this.refs.modalPinErr.close();
+                    })
+                    .catch((err) => {
+                        this.refs.modalFail.close();
+                        }
+                    );
+            }
         }
     }
 
@@ -483,7 +501,7 @@ class newOrder extends React.Component {
     }
 
     render() {
-        const { loadingPay, first, second, operator, result, tickets, total, tentative, produits, showError, showErrMontant, showErrTotal, showPinErr, showSoldeErr } = this.state;
+        const { loadingPay, first, second, operator, result, tickets, total, tentativePin, produits, showError, showErrMontant, showErrTotal, showPinErr, showSoldeErr } = this.state;
         let btn = "Valider";
         return(
             <View style={{flex:1, backgroundColor:'#fafafa'}}>
@@ -583,7 +601,11 @@ class newOrder extends React.Component {
                                       buttonStyle={{backgroundColor:'#fb8c00'}}
                                       onPress={() => activityStarter.navigeteMpos((value) => this.setState({pincode: value}))}
                                     />
-                                {showPinErr && <Text style={styles.textError}> Erreur Pin Code {`${this.state.pincode}`}</Text>}
+                                    {showPinErr &&
+                                    <View style={{flex:1}}>
+                                        { tentativePin ===1 && <Text style={styles.textError}> Erreur Pin Code, reste 2 tentatives </Text>}
+                                        { tentativePin ===2 && <Text style={styles.textError}> Erreur Pin Code, reste 1 tentatives </Text>}
+                                    </View> }
                                 </View>
                             </View>
                         </View>
@@ -687,6 +709,22 @@ class newOrder extends React.Component {
                                     color: '#fff',
                                     fontSize: 16
                                 }}>Retour</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </Modal>
+                <Modal style={{  height: 250, width: 400, backgroundColor:'#fff', borderRadius:4, padding:5 }} position={"center"} ref={"modalPinErr"} swipeToClose={false} backdropPressToClose={false}>
+                    <View style={{flex: 1, justifyContent:'center', alignItems:'center'}}>
+                        <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
+                            <FontAwesome5 name={"exclamation-circle"} color={"#e53935"} size={35} style={{marginTop:15}}/>
+                            <View style={{flex:1}}>
+                                <Text style={{fontFamily:'Livvic-Medium', color:'#e53935', fontSize:20, marginTop:10, textAlign:'center'}}>Erreur Pin Code ! </Text>
+                            </View>
+                        </View>
+                        <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
+                            <TouchableOpacity style={{width: 200, height: 50, marginTop: 20, backgroundColor: '#e53935',
+                                justifyContent: 'center', alignItems: 'center', borderRadius: 5}} onPress={() => {this._goToHome()}}>
+                                <Text style={{fontFamily: 'Livvic-Regular', color: '#fff', fontSize: 16}}>Annuler le paiement</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

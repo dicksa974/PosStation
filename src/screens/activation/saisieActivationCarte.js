@@ -84,7 +84,7 @@ class saisieActivationCarte extends React.Component {
         }).then((response) => {
             console.log("activation carte",response);
             if(response.status === 200) {
-                activityStarter.showPinPadText("O'Card - Bienvenue");
+                activityStarter.showPinPadText("Bienvenue");
                 response.json().then(data => {
                     console.log("get carte", data);
                     this.setState({ loading: false, carte: data });

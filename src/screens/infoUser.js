@@ -71,7 +71,7 @@ export default class infoUser extends React.Component {
         let authorize = false;
         i.restriction.forEach(element => {
             switch (element.restrictionJour) {
-                case "LUNDI_VENREDI":
+                case "LUNDI_VENDREDI":
                     if(date.day()>= 1 && date.day()<=5){
                         var hDebut = [element.heure_debut.slice(0, 2), ":", element.heure_debut.slice(2)].join('');
                         var hFin = [element.heure_fin.slice(0, 2), ":", element.heure_fin.slice(2)].join('');
