@@ -358,19 +358,36 @@ class newOrder extends React.Component {
         if(this.state.item.solde > this.state.total) {
             if(pin !== null){
                 if(pin.trim() === "1234"){
-                    activityStarter.showPinPadText('Pin code correct')
+                    activityStarter.showPinPadText('Pin code correct');
                     this._launchPay()
 
                 } else {
-                    Alert.alert(
-                      'Pin code incorrect'
-                    )
-                    activityStarter.showPinPadText('Pin code incorrect')
+                    if(this.state.tentativePin === 0 || this.state.tentativePin === 1 || this.state.tentativePin === 2){
+                        this.setState({showPinErr: true, tentativePin: this.state.tentativePin+1});
+                        this.refs.modalAsk.open();
+                        activityStarter.showPinPadText('Pin code incorrect');
+                    }
+                    else {
+                        fetch(host + "/cartes/status/ERRPIN/"+this.state.item.id, {
+                            method: "PUT",
+                            headers: {
+                                Accept: "application/json",
+                                "Content-Type": "application/json",
+                                Authorization: "Bearer " + this.props.token
+                            }
+                        })
+                            .then((res) => {
+                                this.refs.modalPinErr.open();
+                            })
+                            .catch((err) => {
+                                    this.refs.modalFail.open();
+                                }
+                            );
+                    }
                 }
             } else {
                 ToastAndroid.show('Pin Pad non connecter', ToastAndroid.LONG);
             }
-            this.setState({showSoldeErr: false})
         }
         else {
             this.setState({showSoldeErr: true})
@@ -387,103 +404,75 @@ class newOrder extends React.Component {
             km = this.state.inputKm;
         }
 
-        if(this.state.pincode === this.state.pincode) {
-            this.setState({showPinErr: false, loadingPay:true});
-            let ticket = JSON.stringify({
-                carte: {id: this.state.item.id},
-                station: {id: "5ddfa08ecf4de44d374f313f"},
-                transactions: this.state.myProduits,
-                typeTicket: "DEBIT"
-            });
+        this.setState({showPinErr: false, loadingPay:true});
+        let ticket = JSON.stringify({
+            carte: {id: this.state.item.id},
+            station: {id: "5ddfa08ecf4de44d374f313f"},
+            transactions: this.state.myProduits,
+            typeTicket: "DEBIT"
+        });
 
-            console.log("mon ticket ", ticket);
-            console.log("mon url ", host + "/tickets/");
-            console.log("mon token ", this.props.token);
-
-            fetch(host + "/tickets/", {
-                method: "POST",
-                headers: {
-                    Accept: "application/json",
-                    "Content-Type": "application/json",
-                    Authorization: "Bearer " + this.props.token
-                },
-                body: ticket
-            }).then((response) => {
-                console.log(response);
-                if (response.status === 200) {
-                    console.log("success creation ticket");
-                    let carte = this.state.item;
-                    carte.solde = parseFloat(carte.solde) - parseFloat(this.state.total);
-                    console.log("update carte ", JSON.stringify(carte));
-                    fetch(host + "/cartes/"+this.state.item.id, {
-                        method: "PUT",
-                        headers: {
-                            Accept: "application/json",
-                            "Content-Type": "application/json",
-                            Authorization: "Bearer " + this.props.token
-                        },
-                        body: JSON.stringify(carte)
-                    }).then((res) => {
-                        console.log(res);
-                        if (res.status === 200) {
-                            response.json().then(data => {
-                                console.log(data);
-                                const action = { type : "ADD_TICKET", value : data.id}; //changer pour mettre le tableau de transaction
-                                this.props.dispatch(action);
-                            });
-                            this.setState({loadingPay: false});
-                          activityStarter.showPinPadText('Paiement effectue')
-                            this.refs.modalAsk.close();
-                            this.refs.modalSuccess.open();
-                        }
-                        else {
-                          activityStarter.showPinPadText('Paiement abandonne')
-                            this.setState({loadingPay:false});
-                            this.refs.modalAsk.close();
-                            this.refs.modalFail.open();
-                        }
-                    }).catch((err) => {
-                        this.setState({loadingPay:false});
-                        this.refs.modalAsk.close();
-                        this.refs.modalFail.open();
-                    })
-                } else {
-                    this.setState({loadingPay:false});
-                    this.refs.modalAsk.close();
-                    this.refs.modalFail.open();
-                }
-            })
-                .catch(error => {
-                    this.setState({loadingPay:false});
-                    this.refs.modalAsk.close();
-                    this.refs.modalFail.open();
-                });
-        }
-        else{
-            if(this.state.tentativePin === 0 || this.state.tentativePin === 1 || this.state.tentativePin === 2){
-                this.setState({showPinErr: true, tentativePin: this.state.tentativePin+1});
-            }
-            else {
-                fetch(host + "/cartes/status/ERRPIN/"+this.state.item.id, {
+        fetch(host + "/tickets/", {
+            method: "POST",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                Authorization: "Bearer " + this.props.token
+            },
+            body: ticket
+        }).then((response) => {
+            console.log(response);
+            if (response.status === 200) {
+                console.log("success creation ticket");
+                let carte = this.state.item;
+                carte.solde = parseFloat(carte.solde) - parseFloat(this.state.total);
+                console.log("update carte ", JSON.stringify(carte));
+                fetch(host + "/cartes/"+this.state.item.id, {
                     method: "PUT",
                     headers: {
                         Accept: "application/json",
                         "Content-Type": "application/json",
                         Authorization: "Bearer " + this.props.token
+                    },
+                    body: JSON.stringify(carte)
+                }).then((res) => {
+                    console.log(res);
+                    if (res.status === 200) {
+                        response.json().then(data => {
+                            console.log(data);
+                            const action = { type : "ADD_TICKET", value : data.id}; //changer pour mettre le tableau de transaction
+                            this.props.dispatch(action);
+                        });
+                        this.setState({loadingPay: false});
+                      activityStarter.showPinPadText('Paiement effectue')
+                        this.refs.modalAsk.close();
+                        this.refs.modalSuccess.open();
                     }
+                    else {
+                      activityStarter.showPinPadText('Paiement abandonne')
+                        this.setState({loadingPay:false});
+                        this.refs.modalAsk.close();
+                        this.refs.modalFail.open();
+                    }
+                }).catch((err) => {
+                    this.setState({loadingPay:false});
+                    this.refs.modalAsk.close();
+                    this.refs.modalFail.open();
                 })
-                    .then((res) => {
-                        this.refs.modalPinErr.close();
-                    })
-                    .catch((err) => {
-                        this.refs.modalFail.close();
-                        }
-                    );
+            } else {
+                this.setState({loadingPay:false});
+                this.refs.modalAsk.close();
+                this.refs.modalFail.open();
             }
-        }
+        })
+            .catch(error => {
+                this.setState({loadingPay:false});
+                this.refs.modalAsk.close();
+                this.refs.modalFail.open();
+            });
     }
 
-    _checkKm(){
+/*    _checkKm(){
         if(this.state.showError === false){
             if(this.state.item.kilometrage < this.state.inputKm){
                 this.refs.modalKm.close();
@@ -497,8 +486,7 @@ class newOrder extends React.Component {
             this.refs.modalKm.close();
             this.refs.modalAsk.open();
         }
-
-    }
+    }*/
 
     render() {
         const { loadingPay, first, second, operator, result, tickets, total, tentativePin, produits, showError, showErrMontant, showErrTotal, showPinErr, showSoldeErr } = this.state;
@@ -542,10 +530,10 @@ class newOrder extends React.Component {
                             <Text style={styles.textError}>Une incohérence au niveau du Kilométrage à été détectée ! Veuillez confirmer ou rectifier votre saisie </Text>
                         </View> }
                         <View style={{flex:1, flexDirection:'row', justifyContent:'space-around', alignItems:'flex-end', marginBottom:10, marginTop:10}}>
-                            <TouchableOpacity style={{width: 140, height: 50, marginTop:20, backgroundColor:'green', justifyContent:'center', alignItems:'center', borderRadius:5}}
+                          {/*  <TouchableOpacity style={{width: 140, height: 50, marginTop:20, backgroundColor:'green', justifyContent:'center', alignItems:'center', borderRadius:5}}
                                               onPress={() => { this._checkKm() }}>
                                 <Text style={{fontFamily:'Livvic-Regular', color:'#fff', fontSize:16}}>Valider</Text>
-                            </TouchableOpacity>
+                            </TouchableOpacity>*/}
                             <TouchableOpacity style={{width: 140, height: 50, marginLeft:20,  backgroundColor:'red', justifyContent:'center', alignItems:'center', borderRadius:5}}
                                               onPress={() => { this.refs.modalKm.close(); }}>
                                 <Text style={{fontFamily:'Livvic-Regular', color:'#fff', fontSize:16}}>Annuler</Text>
@@ -553,7 +541,7 @@ class newOrder extends React.Component {
                         </View>
                     </View>
                 </Modal>
-                <Modal style={{ height: 350, width: 450, backgroundColor:'#fff', borderRadius:4, padding:5 }} position={"center"} ref={"modalAsk"} swipeToClose={false} backdropPressToClose={false} backdrop={true} >
+                <Modal style={{ height: 350, width: 400, backgroundColor:'#fff', borderRadius:4, padding:5 }} position={"center"} ref={"modalAsk"} swipeToClose={false} backdropPressToClose={false} backdrop={true} >
                     {loadingPay &&
                     <View style={{flex: 1, backgroundColor: '#fafafa', justifyContent:'center', alignItems:'center'}}>
                         <ActivityIndicator color={'blue'} size={"large"}/>
@@ -562,61 +550,30 @@ class newOrder extends React.Component {
                     {!loadingPay &&
                     <View style={{flex: 1, justifyContent:'center', alignItems:'center'}}>
                         <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
-                            <FontAwesome5 name={"question-circle"} color={"#fb8c00"} size={35} style={{marginTop:15}}/>
-                            <Text style={{fontFamily:'Livvic-Medium', color:'#757575', fontSize:22, marginTop:10}}>Confirmer</Text>
+                            <FontAwesome5  name={"exclamation-circle"} color={"#e53935"} size={35} style={{marginTop:15}}/>
+                            <Text style={{fontFamily:'Livvic-Medium', color:'#757575', fontSize:22, marginTop:10}}>Erreur Pin Code</Text>
                         </View>
                         <View style={{flex:2, justifyContent:'center', alignItems:'center', marginTop:20}}>
                             <View style={{flex:1, marginTop:15 }}>
-                            <Text style={{fontFamily: 'Livvic-Regular', color: '#757575', fontSize: 17, textAlign: 'center'}}>
-                                Confirmer le paiement de {this.state.total.toFixed(2).replace('.',',')} € pour</Text>
+                                { tentativePin === 1 &&
                                 <Text style={{fontFamily: 'Livvic-Regular', color: '#757575', fontSize: 17, textAlign: 'center'}}>
-                                    la carte n°{this.state.item.serialNumber} ?</Text>
-                                <View style={{flex:1,width:350,  justifyContent:'center'}}>
+                                    Erreur Pin Code, reste 2 tentatives </Text>
+                                }
+                                { tentativePin === 2 &&
+                                <Text style={{fontFamily: 'Livvic-Regular', color: '#757575', fontSize: 17, textAlign: 'center'}}>
+                                    Erreur Pin Code, reste 1 tentatives </Text>
+                                }
 
-
-                                <Input
-                                    label={'Pin Code'}
-                                    keyboardType={"number-pad"}
-                                    leftIcon={
-                                        <Fontisto
-                                            name='locked'
-                                            size={20}
-                                            color='#9e9e9e'
-                                            style={{marginRight:10}}
-                                        />
-                                    }
-                                    autoFocus={false}
-                                    style={{marginTop:10, marginLeft:10}}
-                                    onChangeText={(value) => this.setState({pincode: value})}
-                                    value={`${this.state.pincode}`}
-                                />
-                                    <Button
-                                      icon={{
-                                          name: "key",
-                                          size: 20,
-                                          color: "white",
-                                          type: "font-awesome"
-                                      }}
-                                      title="Saisir pin code"
-                                      buttonStyle={{backgroundColor:'#fb8c00'}}
-                                      onPress={() => activityStarter.navigeteMpos((value) => this.setState({pincode: value}))}
-                                    />
-                                    {showPinErr &&
-                                    <View style={{flex:1}}>
-                                        { tentativePin ===1 && <Text style={styles.textError}> Erreur Pin Code, reste 2 tentatives </Text>}
-                                        { tentativePin ===2 && <Text style={styles.textError}> Erreur Pin Code, reste 1 tentatives </Text>}
-                                    </View> }
-                                </View>
                             </View>
                         </View>
                         <View style={{flex:1, flexDirection:'row', justifyContent:'space-around', alignItems:'flex-end', marginBottom:10, marginTop:5}}>
-                            <TouchableOpacity style={{width: 135, height: 45, backgroundColor:'green', justifyContent:'center', alignItems:'center', borderRadius:5}}
-                                              onPress={() => { this._launchPay()} }>
-                                <Text style={{fontFamily:'Livvic-Regular', color:'#fff', fontSize:16}}>Confirmer</Text>
+                            <TouchableOpacity style={{width: 160, height: 45, backgroundColor:'green', justifyContent:'center', alignItems:'center', borderRadius:5}}
+                                              onPress={ () => activityStarter.navigeteMpos((value) => this._checkPincode(value)) }>
+                                <Text style={{fontFamily:'Livvic-Regular', color:'#fff', fontSize:16}}>Nouvelle tentative</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={{width: 135, height: 45, marginLeft:20,  backgroundColor:'red', justifyContent:'center', alignItems:'center', borderRadius:5}}
-                                              onPress={() => { this.refs.modalAsk.close();}}>
-                                <Text style={{fontFamily:'Livvic-Regular', color:'#fff', fontSize:16}}>Annuler</Text>
+                            <TouchableOpacity style={{width: 160, height: 45, marginLeft:20,  backgroundColor:'red', justifyContent:'center', alignItems:'center', borderRadius:5}}
+                                              onPress={() => { this.refs.modalAsk.close(); this._goToHome()}}>
+                                <Text style={{fontFamily:'Livvic-Regular', color:'#fff', fontSize:16}}>Annuler le paiement</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -643,36 +600,11 @@ class newOrder extends React.Component {
                             <View style={{flex:1}}>
                                 <Text style={{fontFamily:'Livvic-Medium', color:'#e53935', fontSize:20, marginTop:10, textAlign:'center'}}>Attention ! Une erreur est survenue.</Text>
                             </View>
-                            {tentative === 1 &&
-                            <View style={{flex:1}}><Text style={{fontFamily:'Livvic-Medium', color:'#e53935', fontSize:20, marginTop:10, textAlign:'center'}}>Attention ! Le paiement n'a pas été enregistré</Text></View>
-                            }
-                            {tentative === 2 &&
                             <View style={{flex:1}}>
-                                <Text style={{fontFamily:'Livvic-Medium', color:'#e53935', fontSize:20, marginTop:10, textAlign:'center'}}>Attention ! La nouvelle tentative de paiement n'a pas été enregistré</Text></View>
-                            }
+                                <Text style={{fontFamily:'Livvic-Regular', color:'#e53935', fontSize:20, marginTop:10, textAlign:'center'}}>La tentative de paiement n'a pas été enregistré</Text>
+                            </View>
                         </View>
                         <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
-                            {tentative === 1 &&
-                            <TouchableOpacity style={{
-                                width: 240,
-                                height: 50,
-                                marginTop: 20,
-                                backgroundColor: '#e53935',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                borderRadius: 5
-                            }}
-                                              onPress={() => {
-                                                  this._launchPay()
-                                              }}>
-                                <Text style={{
-                                    fontFamily: 'Livvic-Regular',
-                                    color: '#fff',
-                                    fontSize: 15
-                                }}>Nouvelle tentative de paiement</Text>
-                            </TouchableOpacity>
-                            }
-                            {tentative === 2 &&
                             <TouchableOpacity style={{
                                 width: 200,
                                 height: 50,
@@ -689,26 +621,7 @@ class newOrder extends React.Component {
                                     fontFamily: 'Livvic-Regular',
                                     color: '#fff',
                                     fontSize: 16
-                                }}>Annuler le paiement</Text>
-                            </TouchableOpacity>
-                            }
-                            <TouchableOpacity style={{
-                                width: 200,
-                                height: 50,
-                                marginTop: 20,
-                                backgroundColor: '#e53935',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                borderRadius: 5
-                            }}
-                                              onPress={() => {
-                                                  this._goToHome()
-                                              }}>
-                                <Text style={{
-                                    fontFamily: 'Livvic-Regular',
-                                    color: '#fff',
-                                    fontSize: 16
-                                }}>Retour</Text>
+                                }}>Annuler</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -720,11 +633,14 @@ class newOrder extends React.Component {
                             <View style={{flex:1}}>
                                 <Text style={{fontFamily:'Livvic-Medium', color:'#e53935', fontSize:20, marginTop:10, textAlign:'center'}}>Erreur Pin Code ! </Text>
                             </View>
+                            <View style={{flex:1}}>
+                                <Text style={{fontFamily:'Livvic-Regular', color:'#e53935', fontSize:20, marginTop:10, textAlign:'center'}}>La Carte bloquée</Text>
+                            </View>
                         </View>
                         <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
                             <TouchableOpacity style={{width: 200, height: 50, marginTop: 20, backgroundColor: '#e53935',
                                 justifyContent: 'center', alignItems: 'center', borderRadius: 5}} onPress={() => {this._goToHome()}}>
-                                <Text style={{fontFamily: 'Livvic-Regular', color: '#fff', fontSize: 16}}>Annuler le paiement</Text>
+                                <Text style={{fontFamily: 'Livvic-Regular', color: '#fff', fontSize: 16}}>Retour</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

@@ -2,7 +2,6 @@ import React from "react";
 import {ActivityIndicator, Dimensions, Image, StyleSheet, Text, TouchableOpacity, View} from "react-native";
 import { Avatar, Icon, Card } from 'react-native-elements';
 import Fontisto from "react-native-vector-icons/Fontisto";
-import ButtonHeader from "./../components/ButtonHeader";
 import { host } from "../utils/constants";
 import moment from "moment";
 
@@ -45,26 +44,6 @@ export default class infoUser extends React.Component {
         this.setState({ currentItem: i, loading: false, opposition: o, station: s });
     }
 
-    _renderItem = ({item, index}) => {
-        let color = item.color;
-            return (
-                <View style={{flex: 1}} key={index}>
-                    <View style={styles.GridView}>
-                        <TouchableOpacity style={[styles.inputGrid, {backgroundColor: color}]}>
-                            {color !== '#fff' && <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
-                                <Text style={[styles.textInput, {color: '#fff'}]}>{item.label}</Text>
-                                <Text style={[styles.textInput, {color: '#fff'}]}>{item.num}</Text>
-                            </View>}
-                            {color === '#fff' && <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
-                                <Text style={[styles.textInput, {color: '#616161'}]}>{item.label}</Text>
-                                <Text style={[styles.textInput, {color: '#616161'}]}>{item.num}</Text>
-                            </View>}
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            )
-    };
-
     _checkRestrictions(i){
         let date = moment();
         let hour = date.format("HH:mm");
@@ -106,12 +85,21 @@ export default class infoUser extends React.Component {
         }
     }
 
+    _goNext() {
+        this.props.navigation.navigate('NewOrder', {item: this.state.currentItem});
+    };
+
     render() {
         const { currentItem, loading, showAuthErr } = this.state;
         let color = "#4caf50", text="", showErr=false;
 
         if (currentItem.status !== "ACTIVE" ) {
             color = "#e53935";
+        }
+        else if (currentItem.client.status !== "ACTIVE"){
+            color = "#e53935";
+            showErr = true;
+            text = "Ce client n'est pas activé !"
         }
         else if(currentItem.solde <=0){
             color = "#e53935";
@@ -184,16 +172,16 @@ export default class infoUser extends React.Component {
                                                 </View>
                                                 <View style={{flex:1, flexDirection:'row', justifyContent:'center', alignItems:'center'}}>
                                                     <Fontisto name={"car"} style={{marginTop:5}} size={26} color='#03498e'/>
-                                                    <Text style={{fontSize: 18, fontFamily: 'Livvic-Regular', marginTop: 10, color:'#03498e', marginLeft:15}}>{/*{currentItem.matricule}*/}</Text>
+                                                    <Text style={{fontSize: 18, fontFamily: 'Livvic-Regular', marginTop: 10, color:'#03498e', marginLeft:15}}>{currentItem.vehicule.immatriculation}</Text>
                                                 </View>
                                             </View>
                                             <View style={{flex:1, borderRightColor:"#e0e0e0",borderRightWidth:1}}>
                                                 <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
-                                                    <Text style={{fontSize: 16, fontFamily: 'Livvic-Regular', marginTop: 10, color:'#757575', marginLeft:15}}>UTILISATEUR</Text>
+                                                    <Text style={{fontSize: 16, fontFamily: 'Livvic-Regular', marginTop: 10, color:'#757575', marginLeft:15}}>LIBELLE</Text>
                                                 </View>
                                                 <View style={{flex:1, flexDirection:'row', justifyContent:'center', alignItems:'center'}}>
                                                     <Fontisto name={"person"} style={{marginTop:5}} size={26} color='#03498e'/>
-                                                    <Text style={{fontSize: 16, fontFamily: 'Livvic-Regular', marginTop: 10, color:'#03498e', marginLeft:15}} adjustsFontSizeToFit numberOfLines={1}>{/*{currentItem.name}*/}</Text>
+                                                    <Text style={{fontSize: 16, fontFamily: 'Livvic-Regular', marginTop: 10, color:'#03498e', marginLeft:15}} adjustsFontSizeToFit numberOfLines={1}>{currentItem.libelle}</Text>
                                                 </View>
                                             </View>
                                             <View style={{flex:1}}>
@@ -208,7 +196,25 @@ export default class infoUser extends React.Component {
                                     </View>
                         </View>
                         </Card>
-                        <View style={{flex:1,width:"100%", justifyContent:'center', alignItems:'flex-end'}}>{!showErr && <ButtonHeader item={currentItem}/> }
+                        <View style={{flex:1,width:"100%", justifyContent:'center', alignItems:'flex-end'}}>
+                            {!showErr &&
+                            <View style={{flex:1}}>
+                                {currentItem.status === "ACTIVE" &&
+                                    <TouchableOpacity style={{
+                                        width: 160, height: 45, backgroundColor: "#43a047",
+                                        justifyContent: 'center', alignItems: 'center', marginRight: 10, borderRadius: 5}} onPress={() => this._goNext()}>
+                                        <Text style={{fontFamily: 'Livvic-Regular', color: '#fff', fontSize: 14}}>Suivant</Text>
+                                    </TouchableOpacity>
+                                }
+                                {currentItem.status !== "ACTIVE" &&
+                                    <TouchableOpacity style={{
+                                        width: 160, height: 45, backgroundColor: "#e53935",
+                                        justifyContent: 'center', alignItems: 'center', marginRight: 10, borderRadius: 5}} onPress={ () => { this.props.navigation.goBack() }}>
+                                        <Text style={{fontFamily: 'Livvic-Regular', color: '#fff', fontSize: 14}}>Retour</Text>
+                                    </TouchableOpacity>
+                                }
+                            </View>
+                            }
                         </View>
                     </View>
                 }
