@@ -5,6 +5,9 @@ import { connect } from 'react-redux';
 import Modal from "react-native-modalbox";
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import moment from 'moment';
+import base64 from 'react-native-base64';
+
+import {host} from "../utils/constants";
 
 class SplashScreen extends React.Component {
 
@@ -33,24 +36,34 @@ class SplashScreen extends React.Component {
 
     _checkSession() {
         console.log("check session ",this.props);
+        let data = this.props.token;
+        let headers = new Headers();
+        headers.append("Authorization", "Basic " + base64.encode("browser:1234"));
+        headers.append("Accept", "application/json");
+        headers.append("Content-Type", "application/json");
+
         if(this.props.loggedIn) {
-            let now = moment();
-            console.log(this.props.expiredAt);
-            if(this.props.expiredAt){
-                if(now.isSameOrBefore(this.props.expiredAt)) {
-                    this.props.navigation.navigate('Home');
-                }
-                else{
+            fetch(host + `/uaa/oauth/check_token?token=${encodeURIComponent(data)}`, {
+                method: "GET",
+                headers: headers
+            })
+                .then((res) => {
+                    console.log("response check token", res);
+                    if(res.status === 200){
+                        this.props.navigation.navigate('Home');
+                    }
+                    else{
+                        const action = { type: "LOGGED_OUT"};
+                        this.props.dispatch(action);
+                        this.props.navigation.navigate('Auth');
+                    }
+                })
+                .catch((err) => {
+                    console.log("response carte", err);
                     const action = { type: "LOGGED_OUT"};
                     this.props.dispatch(action);
                     this.props.navigation.navigate('Auth');
-                }
-            }
-            else{
-                const action = { type: "LOGGED_OUT"};
-                this.props.dispatch(action);
-                this.props.navigation.navigate('Auth');
-            }
+                });
         }
         else {
             this.props.navigation.navigate('Auth');
@@ -108,6 +121,7 @@ const styles = StyleSheet.create({
 const mapStateToProps = (state) => {
     return {
         loggedIn : state.toggleLogin.loggedIn,
+        token : state.toggleLogin.token,
         expiredAt : state.toggleLogin.expiredAt
     }
 };

@@ -90,7 +90,7 @@ class Home extends React.Component {
                 this.setState({showPinErr: false, loadingPay: true});
                 let ticket = {
                     carte: {id: this.state.carte.id},
-                    station: {id: "5ddfa08ecf4de44d374f313f"},
+                    station: {id: "5df8f9bb261cf3202ab9a13e"},
                     transactions: [{montant: 0}],
                     typeTicket: "ACTIVATION"
                 };
@@ -117,43 +117,48 @@ class Home extends React.Component {
                         })
                             .then((res) => {
                                 console.log("response carte", res);
+                                this.setState({pincode: "", loadingPay: false});
                                 this.refs.modalConfirmActive.close();
                                 this.refs.modalSuccessActive.open();
                             })
                             .catch((err) => {
                                     console.log("response carte", err);
+                                this.setState({pincode: "", loadingPay: false});
                                     this.refs.modalConfirmActive.close();
                                     this.refs.modalFailActive.open();
                                 }
                             );
                     } else {
+                        this.setState({pincode: "", loadingPay: false});
                         this.refs.modalConfirmActive.close();
                         this.refs.modalFailActive.open();
                     }
                 }).catch(error => {
-                    this.setState({loadingPay: false});
+                    this.setState({loadingPay: false, pincode: ""});
                     this.refs.modalConfirmActive.close();
                     this.refs.modalFailActive.open();
                 });
             }
             else {
+                this.setState({pincode: "", loadingPay: false});
                 this.refs.modalConfirmActive.close();
                 this.refs.modalFailActive.open();
             }
         }
         else {
-            this.setState({showPinErr: true})
+            this.setState({showPinErr: true, loadingPay: false})
         }
     }
 
     _redirect(){
         let carte = this.state.carte;
+
         switch (this.state.page) {
             case "INFO":
                 this.props.navigation.navigate('InfoUser', {item: carte});
                 break;
             case "RECHARGE":
-                if(carte.typePayement === "CARTE_PRE_PAYEE" && carte === "ACTIVE" ){
+                if(carte.typePayement === "CARTE_PRE_PAYEE" && carte.status === "ACTIVE" ){
                     this.props.navigation.navigate('SaisieMontant', {carte: carte});
                 }
                 else {
@@ -167,7 +172,7 @@ class Home extends React.Component {
     }
 
     render() {
-        const { showPinErr } = this.state;
+        const { showPinErr, loadingPay } = this.state;
 
         return(
             <ImageBackground style={styles.imageContainer} source={require('../../assets/images/bgPay.jpg')} resizeMode="cover">
@@ -189,7 +194,7 @@ class Home extends React.Component {
                             <View style={{flex:2, justifyContent:'center', alignItems:'center', marginTop:20}}>
                                 <View style={{flex:1, marginTop:15 }}>
                                     <Text style={{fontFamily: 'Livvic-Regular', color: '#757575', fontSize: 17, textAlign: 'center'}}>
-                                        Cette carte ne pas être rechargée. </Text>
+                                        Cette carte ne peut pas être rechargée. </Text>
                                 </View>
                             </View>
                             <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
@@ -200,27 +205,41 @@ class Home extends React.Component {
                             </View>
                         </View>
                     </Modal>
-                    <Modal style={{ height: 350, width: 400, backgroundColor:'#fff', borderRadius:4, padding:5 }} position={"center"} ref={"modalConfirmActive"} swipeToClose={false} backdropPressToClose={false} backdrop={true} >
+                    <Modal style={{ height: 350, width: 450, backgroundColor:'#fff', borderRadius:4, padding:5 }} position={"center"} ref={"modalConfirmActive"} swipeToClose={false} backdropPressToClose={false} backdrop={true} >
                         <View style={{flex: 1, justifyContent:'center', alignItems:'center'}}>
                             <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
                                 <FontAwesome5 name={"question-circle"} color={"#fb8c00"} size={35} style={{marginTop:15}}/>
                                 <Text style={{fontFamily:'Livvic-Medium', color:'#757575', fontSize:22, marginTop:10}}>Activation Carte ?</Text>
-                                <View style={{flex:1, marginTop:15 }}>
-                                    <Text style={{fontFamily: 'Livvic-Regular', color: '#757575', fontSize: 17, textAlign: 'center'}}>
-                                        Confirmer l'activation de la carte n°{this.state.carte.serialNumber} ? </Text>
-                                    <View style={{flex: 1, width: 350, justifyContent: 'center'}}>
-                                        <Input label={'Pin Code Caisse'} keyboardType={"number-pad"}
-                                               leftIcon={
-                                                <Fontisto name='locked' size={20} color='#9e9e9e' style={{marginRight: 10}}/>
-                                               }
-                                            autoFocus={true}
-                                            style={{marginTop: 20, marginLeft: 10}}
-                                            onChangeText={(value) => this.setState({pincode: value})}
-                                            value={`${this.state.pincode}`}
-                                        />
-                                        {showPinErr && <Text style={styles.textError}> Erreur Pin Code </Text>}
+                                {loadingPay &&
+                                    <View style={{flex: 1, backgroundColor: '#fafafa', justifyContent:'center', alignItems:'center'}}>
+                                        <ActivityIndicator color={'blue'} size={"large"}/>
                                     </View>
-                                </View>
+                                }
+                                {!loadingPay &&
+                                    <View style={{flex: 1, marginTop: 15}}>
+                                        <Text style={{
+                                            fontFamily: 'Livvic-Regular',
+                                            color: '#757575',
+                                            fontSize: 17,
+                                            textAlign: 'center',
+                                            marginBottom: 15
+                                        }}>
+                                            Confirmer l'activation de la carte n°{this.state.carte.serialNumber} ? </Text>
+                                        <View style={{flex: 1, width: 350, justifyContent: 'center', marginTop: 10}}>
+                                            <Input label={'Pin Code Caisse'} keyboardType={"number-pad"}
+                                                   leftIcon={
+                                                       <Fontisto name='locked' size={20} color='#9e9e9e'
+                                                                 style={{marginRight: 10}}/>
+                                                   }
+                                                   autoFocus={true}
+                                                   style={{marginTop: 20, marginLeft: 10}}
+                                                   onChangeText={(value) => this.setState({pincode: value})}
+                                                   value={`${this.state.pincode}`}
+                                            />
+                                            {showPinErr && <Text style={styles.textError}> Erreur Pin Code </Text>}
+                                        </View>
+                                    </View>
+                                }
                             </View>
 
                             <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
@@ -250,7 +269,7 @@ class Home extends React.Component {
                             </View>
                         </View>
                     </Modal>
-                    <Modal style={{ height: 250, width: 400, backgroundColor:'#fff', borderRadius:4, padding:5 }} position={"center"} ref={"modalFailActive"} swipeToClose={false} backdropPressToClose={false} backdrop={true} >
+                    <Modal style={{ height: 350, width: 450, backgroundColor:'#fff', borderRadius:4, padding:5 }} position={"center"} ref={"modalFailActive"} swipeToClose={false} backdropPressToClose={false} backdrop={true} >
                         <View style={{flex: 1, justifyContent:'center', alignItems:'center'}}>
                             <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
                                 <FontAwesome5 name={"check-circle"} color={"#e53935"} size={35} style={{marginTop:15}}/>
@@ -259,11 +278,11 @@ class Home extends React.Component {
                                     <Text style={{fontFamily: 'Livvic-Regular', color: '#757575', fontSize: 17, textAlign: 'center'}}>
                                         L'activation de la carte n°{this.state.carte.serialNumber} est échouée.</Text>
                                     <Text style={{fontFamily: 'Livvic-Regular', color: '#757575', fontSize: 17, textAlign: 'center'}}>
-                                        Cette carte n'est peut-être pas autorisé à être activée.</Text>
+                                        Cette carte ne peut pas être activée.</Text>
                                 </View>
                             </View>
 
-                            <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
+                            <View style={{flex:1, justifyContent:'center', alignItems:'center',  marginTop:5}}>
                                 <TouchableOpacity style={{width: 140, height: 50, marginTop:15, backgroundColor:'red', justifyContent:'center', alignItems:'center', borderRadius:5}}
                                                   onPress={() => {this.refs.modalFailActive.close()}}>
                                     <Text style={{fontFamily:'Livvic-Regular', color:'#fff', fontSize:16}}>Retour</Text>

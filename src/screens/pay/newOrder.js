@@ -17,7 +17,7 @@ import CalculatorButtonsContainer from '../../components/calculator/CalculatorBu
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import Fontisto from 'react-native-vector-icons/Fontisto';
 import * as _ from 'lodash';
-import Modal from "react-native-modalbox";
+import Modal from "react-native-modal";
 import {Input, Icon, Button} from "react-native-elements";
 import { connect } from "react-redux";
 import { host } from "../../utils/constants";
@@ -61,7 +61,12 @@ class newOrder extends React.Component {
             tentativePin:0,
             station: {},
             pincode:"",
-            loadingPay: false
+            loadingPay: false,
+            loadPay: false,
+            modalLoad: false,
+            modalAsk: false,
+            modalSuccess: false,
+            modalFail: false,
         };
 
         this.refresh = this.refresh.bind(this);
@@ -342,55 +347,58 @@ class newOrder extends React.Component {
       }
         else {
           this.setState({showSoldeErr: false})
-          this.refs.modalAsk.open();
+       /*   this.refs.modalAsk.open();*/
       }
 
     }
 
     _goToHome () {
         activityStarter.showPinPadText('');
-        this.refs.modalSuccess.close();
-        this.refs.modalFail.close();
+       /* this.refs.modalSuccess.close();
+        this.refs.modalFail.close();*/
         this.props.navigation.navigate('Home');
     }
 
-    _checkPincode (pin){
-        if(this.state.item.solde > this.state.total) {
-            if(pin !== null){
-                if(pin.trim() === "1234"){
-                    activityStarter.showPinPadText('Pin code correct');
-                    this._launchPay()
+    _openModal(){
+        this.setState({modalLoad: true});
+    }
 
-                } else {
-                    if(this.state.tentativePin === 0 || this.state.tentativePin === 1 || this.state.tentativePin === 2){
-                        this.setState({showPinErr: true, tentativePin: this.state.tentativePin+1});
-                        this.refs.modalAsk.open();
-                        activityStarter.showPinPadText('Pin code incorrect');
-                    }
-                    else {
-                        fetch(host + "/cartes/status/ERRPIN/"+this.state.item.id, {
-                            method: "PUT",
-                            headers: {
-                                Accept: "application/json",
-                                "Content-Type": "application/json",
-                                Authorization: "Bearer " + this.props.token
-                            }
-                        })
-                            .then((res) => {
-                                this.refs.modalPinErr.open();
-                            })
-                            .catch((err) => {
-                                    this.refs.modalFail.open();
-                                }
-                            );
-                    }
-                }
+    _checkPincode (pin){
+        if(pin !== null){
+            if(pin.trim() === "1234"){
+                activityStarter.showPinPadText('Pin code correct');
+                this._launchPay()
             } else {
-                ToastAndroid.show('Pin Pad non connecter', ToastAndroid.LONG);
+                this._pinCodeErr();
             }
+        } else {
+            this.setState({modalLoad: false});
+            ToastAndroid.show('Pin Pad non connecter', ToastAndroid.LONG);
+        }
+    }
+
+    _pinCodeErr() {
+        let tentative = this.state.tentativePin;
+        activityStarter.showPinPadText('Pin code incorrect');
+
+        if(tentative <2){
+            this.setState({modalLoad: false, modalAsk: true, tentativePin: tentative+1});
         }
         else {
-            this.setState({showSoldeErr: true})
+            fetch(host + "/cartes/status/ERRPIN/"+this.state.item.id, {
+                method: "PUT",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json",
+                    Authorization: "Bearer " + this.props.token
+                }
+            })
+                .then((res) => {
+                    this.setState({modalLoad: false, modalAsk: false, modalPinErr: true});
+                })
+                .catch((err) => {
+                    this.setState({modalLoad: false, modalAsk: false, modalFail: true});
+                });
         }
     }
 
@@ -407,7 +415,7 @@ class newOrder extends React.Component {
         this.setState({showPinErr: false, loadingPay:true});
         let ticket = JSON.stringify({
             carte: {id: this.state.item.id},
-            station: {id: "5ddfa08ecf4de44d374f313f"},
+            station: {id: "5df8f9bb261cf3202ab9a13e"},
             transactions: this.state.myProduits,
             typeTicket: "DEBIT"
         });
@@ -421,12 +429,9 @@ class newOrder extends React.Component {
             },
             body: ticket
         }).then((response) => {
-            console.log(response);
             if (response.status === 200) {
-                console.log("success creation ticket");
                 let carte = this.state.item;
                 carte.solde = parseFloat(carte.solde) - parseFloat(this.state.total);
-                console.log("update carte ", JSON.stringify(carte));
                 fetch(host + "/cartes/"+this.state.item.id, {
                     method: "PUT",
                     headers: {
@@ -436,255 +441,245 @@ class newOrder extends React.Component {
                     },
                     body: JSON.stringify(carte)
                 }).then((res) => {
-                    console.log(res);
                     if (res.status === 200) {
                         response.json().then(data => {
-                            console.log(data);
                             const action = { type : "ADD_TICKET", value : data.id}; //changer pour mettre le tableau de transaction
                             this.props.dispatch(action);
                         });
-                        this.setState({loadingPay: false});
-                      activityStarter.showPinPadText('Paiement effectue')
-                        this.refs.modalAsk.close();
-                        this.refs.modalSuccess.open();
+                        this.setState({loadingPay: false, modalAsk:false, modalSuccess:true});
+                        activityStarter.showPinPadText('Paiement effectue')
                     }
                     else {
-                      activityStarter.showPinPadText('Paiement abandonne')
-                        this.setState({loadingPay:false});
-                        this.refs.modalAsk.close();
-                        this.refs.modalFail.open();
+                      activityStarter.showPinPadText('Paiement abandonne');
+                      this.setState({loadingPay: false, modalAsk:false, modalFail:true});
                     }
                 }).catch((err) => {
-                    this.setState({loadingPay:false});
-                    this.refs.modalAsk.close();
-                    this.refs.modalFail.open();
+                    this.setState({loadingPay: false, modalAsk:false, modalFail:true});
                 })
             } else {
                 this.setState({loadingPay:false});
-                this.refs.modalAsk.close();
-                this.refs.modalFail.open();
+                this.setState({loadingPay: false, modalAsk:false, modalFail:true});
             }
         })
             .catch(error => {
                 this.setState({loadingPay:false});
-                this.refs.modalAsk.close();
-                this.refs.modalFail.open();
+                this.setState({loadingPay: false, modalAsk:false, modalFail:true});
             });
     }
 
-/*    _checkKm(){
-        if(this.state.showError === false){
-            if(this.state.item.kilometrage < this.state.inputKm){
-                this.refs.modalKm.close();
-                this.refs.modalAsk.open();
-            }
-            else{
-                this.setState({showError : true})
+    _checkKm(){
+        if(this.state.item.solde > this.state.total) {
+            if (this.state.item.vehicule.saisi_km) {
+                this.setState({modalKm: true})
+            } else if (this.state.item.vehicule.code_chauffeur) {
+                this.setState({modalCodeChauff: true})
+            } else {
+                this.setState({modalLoad: true});
             }
         }
         else{
-            this.refs.modalKm.close();
-            this.refs.modalAsk.open();
+            this.setState({showSoldeErr: true})
         }
-    }*/
+    }
+
+    _checkInputKm(km){
+        if(km !== null){
+            activityStarter.showPinPadText('Kilometrage saisie');
+            if(km.trim() > this.state.item.vehicule.km){
+              //update le champs km dans vehicule
+            } else {
+                //demande comfirmation si incohérence
+            }
+        } else {
+            this.setState({modalKm: false});
+            ToastAndroid.show('Pin Pad non connecter', ToastAndroid.LONG);
+        }
+    }
 
     render() {
-        const { loadingPay, first, second, operator, result, tickets, total, tentativePin, produits, showError, showErrMontant, showErrTotal, showPinErr, showSoldeErr } = this.state;
+        const { loadingPay, loadPay, first, second, operator, result, tickets, total, tentativePin, produits, showError, showErrMontant, showErrTotal, showPinErr, showSoldeErr } = this.state;
         let btn = "Valider";
         return(
             <View style={{flex:1, backgroundColor:'#fafafa'}}>
-                <Modal style={{ height: 250, width: 400, backgroundColor:'#fff', borderRadius:4, padding:5, marginTop:25 }} position={"center"} ref={"modalKm"} swipeToClose={false} backdropPressToClose={false} backdrop={true} >
-                    <View style={{flex: 1, justifyContent:'center', alignItems:'center'}}>
-                        <View style={{flex:1,width:'95%', justifyContent:'center'}}>
-                            <Button
-                              icon={{
-                                  name: "check",
-                                  size: 20,
-                                  color: "white",
-                                  type: "font-awesome"
-                              }}
-                              title="Saisi Kilométrage"
-                              buttonStyle={{backgroundColor:'#4caf50'}}
-                              onPress={() => activityStarter.Kilometrage((value) => this.setState({inputKm: value}))}
-                            />
+               <Modal transparent={true} isVisible={this.state.modalKm} onModalShow={() => { activityStarter.Kilometrage((value) => this._checkInputKm(value)) }}>
+                   <View style={{flex: 1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center'}}>
+                       <View style={{width: 370, height: 300, backgroundColor:"#fff", borderRadius:5}}>
+                           <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
+                               <FontAwesome5 name={"spinner"} color={"green"} size={35} style={{marginTop:15}}/>
+                               <Text style={{fontFamily:'Livvic-Medium', color:'#757575', fontSize:22, marginTop:10}}>Saisie pin code en cours ...</Text>
+                           </View>
+                       </View>
+                   </View>
+                </Modal>
+                <Modal transparent={true} isVisible={this.state.modalLoad} onModalShow={() => { activityStarter.navigeteMpos((value) => this._checkPincode(value)) }} >
+                    <View style={{flex: 1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center'}}>
+                        <View style={{width: 370, height: 300, backgroundColor:"#fff", borderRadius:5}}>
+                            <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
+                                <FontAwesome5 name={"spinner"} color={"green"} size={35} style={{marginTop:15}}/>
+                                <Text style={{fontFamily:'Livvic-Medium', color:'#757575', fontSize:22, marginTop:10}}>Saisie pin code en cours ...</Text>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
+                <Modal transparent={true} isVisible={this.state.modalAsk}>
+                    <View style={{flex: 1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center'}}>
+                        <View style={{width: 400, height: 300, backgroundColor:"#fff", borderRadius:5}}>
+                            <View style={{flex:1, justifyContent:'center', alignItems:'center', marginTop:10}}>
+                                <FontAwesome5  name={"exclamation-circle"} color={"#e53935"} size={35} style={{marginTop:15}}/>
+                                <Text style={{fontFamily:'Livvic-Medium', color:'#757575', fontSize:22, marginTop:10}}>Erreur Pin Code</Text>
+                            </View>
+                            <View style={{flex:2, justifyContent:'center', alignItems:'center', marginTop:20}}>
+                                <View style={{flex:1, marginTop:15 }}>
+                                    {tentativePin === 1 &&
+                                    <Text style={{
+                                        fontFamily: 'Livvic-Regular',
+                                        color: '#757575',
+                                        fontSize: 17,
+                                        textAlign: 'center'
+                                    }}>
 
-                            {/*<Input
-                                label={'Kilométrage'}
-                                placeholder='Veuillez saisir votre kilométrage'
-                                keyboardType={"number-pad"}
-                                leftIcon={
-                                    <Fontisto
-                                        name='car'
-                                        size={24}
-                                        color='#9e9e9e'
-                                        style={{marginRight:10}}
-                                    />
-                                }
-                                autoFocus={true}
-                                style={{marginTop:10, marginLeft:10}}
-                                onChangeText={(value) => this.setState({inputKm: value})}
-                                value={`${this.state.inputKm}`}
-                            />*/}
-                        </View>
-                        { showError && <View style={{flex:1,width:'95%', justifyContent:'center'}}>
-                            <Text style={styles.textError}>Une incohérence au niveau du Kilométrage à été détectée ! Veuillez confirmer ou rectifier votre saisie </Text>
-                        </View> }
-                        <View style={{flex:1, flexDirection:'row', justifyContent:'space-around', alignItems:'flex-end', marginBottom:10, marginTop:10}}>
-                          {/*  <TouchableOpacity style={{width: 140, height: 50, marginTop:20, backgroundColor:'green', justifyContent:'center', alignItems:'center', borderRadius:5}}
-                                              onPress={() => { this._checkKm() }}>
-                                <Text style={{fontFamily:'Livvic-Regular', color:'#fff', fontSize:16}}>Valider</Text>
-                            </TouchableOpacity>*/}
-                            <TouchableOpacity style={{width: 140, height: 50, marginLeft:20,  backgroundColor:'red', justifyContent:'center', alignItems:'center', borderRadius:5}}
-                                              onPress={() => { this.refs.modalKm.close(); }}>
-                                <Text style={{fontFamily:'Livvic-Regular', color:'#fff', fontSize:16}}>Annuler</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </Modal>
-                <Modal style={{ height: 350, width: 400, backgroundColor:'#fff', borderRadius:4, padding:5 }} position={"center"} ref={"modalAsk"} swipeToClose={false} backdropPressToClose={false} backdrop={true} >
-                    {loadingPay &&
-                    <View style={{flex: 1, backgroundColor: '#fafafa', justifyContent:'center', alignItems:'center'}}>
-                        <ActivityIndicator color={'blue'} size={"large"}/>
-                    </View>
-                    }
-                    {!loadingPay &&
-                    <View style={{flex: 1, justifyContent:'center', alignItems:'center'}}>
-                        <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
-                            <FontAwesome5  name={"exclamation-circle"} color={"#e53935"} size={35} style={{marginTop:15}}/>
-                            <Text style={{fontFamily:'Livvic-Medium', color:'#757575', fontSize:22, marginTop:10}}>Erreur Pin Code</Text>
-                        </View>
-                        <View style={{flex:2, justifyContent:'center', alignItems:'center', marginTop:20}}>
-                            <View style={{flex:1, marginTop:15 }}>
-                                { tentativePin === 1 &&
-                                <Text style={{fontFamily: 'Livvic-Regular', color: '#757575', fontSize: 17, textAlign: 'center'}}>
-                                    Erreur Pin Code, reste 2 tentatives </Text>
-                                }
-                                { tentativePin === 2 &&
-                                <Text style={{fontFamily: 'Livvic-Regular', color: '#757575', fontSize: 17, textAlign: 'center'}}>
-                                    Erreur Pin Code, reste 1 tentatives </Text>
-                                }
+                                        Il vous reste 2 tentative
+                                    </Text>
+                                    }
+                                    {tentativePin === 2 &&
+                                    <Text style={{
+                                        fontFamily: 'Livvic-Regular',
+                                        color: '#757575',
+                                        fontSize: 17,
+                                        textAlign: 'center'
+                                    }}>
 
+                                     Il vous reste 1 tentative
+                                         </Text>
+                                    }
+                                </View>
                             </View>
-                        </View>
-                        <View style={{flex:1, flexDirection:'row', justifyContent:'space-around', alignItems:'flex-end', marginBottom:10, marginTop:5}}>
-                            <TouchableOpacity style={{width: 160, height: 45, backgroundColor:'green', justifyContent:'center', alignItems:'center', borderRadius:5}}
-                                              onPress={ () => activityStarter.navigeteMpos((value) => this._checkPincode(value)) }>
-                                <Text style={{fontFamily:'Livvic-Regular', color:'#fff', fontSize:16}}>Nouvelle tentative</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={{width: 160, height: 45, marginLeft:20,  backgroundColor:'red', justifyContent:'center', alignItems:'center', borderRadius:5}}
-                                              onPress={() => { this.refs.modalAsk.close(); this._goToHome()}}>
-                                <Text style={{fontFamily:'Livvic-Regular', color:'#fff', fontSize:16}}>Annuler le paiement</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                    }
-                </Modal>
-                <Modal style={{  height: 250, width: 400, backgroundColor:'#fff', borderRadius:4, padding:5 }} position={"center"} ref={"modalSuccess"} swipeToClose={false} backdropPressToClose={false}>
-                    <View style={{flex: 1, justifyContent:'center', alignItems:'center'}}>
-                        <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
-                            <FontAwesome5 name={"check-circle"} color={"green"} size={35} style={{marginTop:15}}/>
-                            <Text style={{fontFamily:'Livvic-Medium', color:'#757575', fontSize:22, marginTop:10}}>Paiement Enregistré !</Text>
-                        </View>
-                        <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
-                            <TouchableOpacity style={{width: 140, height: 50, marginTop:20, backgroundColor:'green', justifyContent:'center', alignItems:'center', borderRadius:5}}
-                                              onPress={() => {this._goToHome()}}>
-                                <Text style={{fontFamily:'Livvic-Regular', color:'#fff', fontSize:16}}>Valider</Text>
-                            </TouchableOpacity>
+                            <View style={{flex:1, flexDirection:'row', justifyContent:'space-around', alignItems:'flex-end', marginBottom:10, marginTop:5}}>
+                                <TouchableOpacity style={{width: 160, height: 45, backgroundColor:'green', justifyContent:'center', alignItems:'center', borderRadius:5}}
+                                                  onPress={ () => { this.setState({modalAsk:false}); this._openModal() }}>
+                                    <Text style={{fontFamily:'Livvic-Regular', color:'#fff', fontSize:16}}>Nouvelle tentative</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={{width: 180, height: 45, marginLeft:20,  backgroundColor:'red', justifyContent:'center', alignItems:'center', borderRadius:5}}
+                                                  onPress={() => { this._goToHome()}}>
+                                    <Text style={{fontFamily:'Livvic-Regular', color:'#fff', fontSize:16}}>Annuler le paiement</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     </View>
                 </Modal>
-                <Modal style={{  height: 250, width: 400, backgroundColor:'#fff', borderRadius:4, padding:5 }} position={"center"} ref={"modalFail"} swipeToClose={false} backdropPressToClose={false}>
-                    <View style={{flex: 1, justifyContent:'center', alignItems:'center'}}>
-                        <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
-                            <FontAwesome5 name={"exclamation-circle"} color={"#e53935"} size={35} style={{marginTop:15}}/>
-                            <View style={{flex:1}}>
-                                <Text style={{fontFamily:'Livvic-Medium', color:'#e53935', fontSize:20, marginTop:10, textAlign:'center'}}>Attention ! Une erreur est survenue.</Text>
+                <Modal transparent={true} isVisible={this.state.modalSuccess}>
+                    <View style={{flex: 1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center'}}>
+                        <View style={{width: 350, height: 300, backgroundColor:"#fff", borderRadius:5}}>
+                            <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
+                                <FontAwesome5 name={"check-circle"} color={"green"} size={35} style={{marginTop:15}}/>
+                                <Text style={{fontFamily:'Livvic-Medium', color:'#757575', fontSize:22, marginTop:10}}>Paiement Enregistré !</Text>
                             </View>
-                            <View style={{flex:1}}>
-                                <Text style={{fontFamily:'Livvic-Regular', color:'#e53935', fontSize:20, marginTop:10, textAlign:'center'}}>La tentative de paiement n'a pas été enregistré</Text>
+                            <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
+                                <TouchableOpacity style={{width: 140, height: 50, marginTop:20, backgroundColor:'green', justifyContent:'center', alignItems:'center', borderRadius:5}}
+                                                  onPress={() => {this._goToHome()}}>
+                                    <Text style={{fontFamily:'Livvic-Regular', color:'#fff', fontSize:16}}>Valider</Text>
+                                </TouchableOpacity>
                             </View>
-                        </View>
-                        <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
-                            <TouchableOpacity style={{
-                                width: 200,
-                                height: 50,
-                                marginTop: 20,
-                                backgroundColor: '#e53935',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                borderRadius: 5
-                            }}
-                                              onPress={() => {
-                                                  this._goToHome()
-                                              }}>
-                                <Text style={{
-                                    fontFamily: 'Livvic-Regular',
-                                    color: '#fff',
-                                    fontSize: 16
-                                }}>Annuler</Text>
-                            </TouchableOpacity>
                         </View>
                     </View>
                 </Modal>
-                <Modal style={{  height: 250, width: 400, backgroundColor:'#fff', borderRadius:4, padding:5 }} position={"center"} ref={"modalPinErr"} swipeToClose={false} backdropPressToClose={false}>
-                    <View style={{flex: 1, justifyContent:'center', alignItems:'center'}}>
-                        <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
-                            <FontAwesome5 name={"exclamation-circle"} color={"#e53935"} size={35} style={{marginTop:15}}/>
-                            <View style={{flex:1}}>
-                                <Text style={{fontFamily:'Livvic-Medium', color:'#e53935', fontSize:20, marginTop:10, textAlign:'center'}}>Erreur Pin Code ! </Text>
+                <Modal transparent={true} isVisible={this.state.modalFail} >
+                    <View style={{flex: 1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center'}}>
+                        <View style={{width: 450, height: 300, backgroundColor:"#fff", borderRadius:5}}>
+                            <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
+                                <FontAwesome5 name={"exclamation-circle"} color={"#e53935"} size={35} style={{marginTop:15}}/>
+                                <View style={{flex:1}}>
+                                    <Text style={{fontFamily:'Livvic-Medium', color:'#e53935', fontSize:20, marginTop:10, textAlign:'center'}}>Attention ! Une erreur est survenue.</Text>
+                                </View>
+                                <View style={{flex:1}}>
+                                    <Text style={{fontFamily:'Livvic-Regular', color:'#757575', fontSize:20, marginTop:10, textAlign:'center'}}>La tentative de paiement n'a pas été enregistré</Text>
+                                </View>
                             </View>
-                            <View style={{flex:1}}>
-                                <Text style={{fontFamily:'Livvic-Regular', color:'#e53935', fontSize:20, marginTop:10, textAlign:'center'}}>La Carte bloquée</Text>
+                            <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
+                                <TouchableOpacity style={{
+                                    width: 200,
+                                    height: 50,
+                                    marginTop: 20,
+                                    backgroundColor: '#e53935',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    borderRadius: 5
+                                }}
+                                                  onPress={() => {
+                                                      this._goToHome()
+                                                  }}>
+                                    <Text style={{
+                                        fontFamily: 'Livvic-Regular',
+                                        color: '#fff',
+                                        fontSize: 16
+                                    }}>Annuler</Text>
+                                </TouchableOpacity>
                             </View>
                         </View>
-                        <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
-                            <TouchableOpacity style={{width: 200, height: 50, marginTop: 20, backgroundColor: '#e53935',
-                                justifyContent: 'center', alignItems: 'center', borderRadius: 5}} onPress={() => {this._goToHome()}}>
-                                <Text style={{fontFamily: 'Livvic-Regular', color: '#fff', fontSize: 16}}>Retour</Text>
-                            </TouchableOpacity>
+                    </View>
+                </Modal>
+                <Modal transparent={true} isVisible={this.state.modalPinErr} ref={"modalPinErr"}>
+                    <View style={{flex: 1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center'}}>
+                        <View style={{width: 400, height: 300, backgroundColor:"#fff", borderRadius:5}}>
+                            <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
+                                <FontAwesome5 name={"exclamation-circle"} color={"#e53935"} size={35} style={{marginTop:15}}/>
+                                <View style={{flex:1}}>
+                                    <Text style={{fontFamily:'Livvic-Medium', color:'#e53935', fontSize:20, marginTop:10, textAlign:'center'}}>Erreur Pin Code ! </Text>
+                                </View>
+                                <View style={{flex:1}}>
+                                    <Text style={{fontFamily:'Livvic-Regular', color:'#757575', fontSize:20, marginTop:10, textAlign:'center'}}>La Carte est bloquée</Text>
+                                </View>
+                            </View>
+                            <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
+                                <TouchableOpacity style={{width: 200, height: 50, marginTop: 20, backgroundColor: '#e53935',
+                                    justifyContent: 'center', alignItems: 'center', borderRadius: 5}} onPress={() => {this._goToHome()}}>
+                                    <Text style={{fontFamily: 'Livvic-Regular', color: '#fff', fontSize: 16}}>Retour</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     </View>
                 </Modal>
                 <View style={{width:"94%", height:1, backgroundColor: "#bdbdbd", marginLeft:'3%', marginTop:'6%'}}/>
-                <View style={{flex:4, padding:4, flexDirection:'row', marginTop:10}}>
-                    <View style={{flex:1, height:'95%'}}>
-                        <FlatList
-                            contentContainerStyle={{flexGrow: 1, justifyContent: 'center'}}
-                            data={produits}
-                            renderItem={this._renderItem}
-                            keyExtractor={this._keyExtractor}
-                            numColumns={2}
-                        />
+                {loadPay &&
+                    <View style={{flex: 1, backgroundColor: '#fafafa', justifyContent:'center', alignItems:'center'}}>
+                        <ActivityIndicator color={'blue'} size={"large"}/>
                     </View>
-                    <View style={{flex:1, height:'90%', justifyContent:'center'}}>
-                        { showErrMontant && <Text style={styles.textError}>Le montant doit être inférieur à 10 000 € ! </Text>}
-                        { showErrTotal &&  <Text style={styles.textError}>Le montant total doit être inférieur à 10 000 € ! </Text>}
-                        { showSoldeErr &&  <Text style={styles.textError}>Le solde de la carte est insuffisant ! </Text>}
-                        <CalculatorResponse
-                            first={first}
-                            second={second}
-                            operator={operator}
-                            result={result}
-                            refresh={this.refresh}/>
-                        <CalculatorButtonsContainer handleButtonPress={this.handleButtonPress}/>
-                    </View>
-                    <View style={{flex:1}}>
-                        <View style={{flex:2, marginTop:15, justifyContent:'flex-start', alignItems:'center'}}>
-                            <Text style={{fontSize: 20, fontFamily:'Livvic-Medium', marginBottom:20}}>TICKET</Text>
-                            { !_.isEmpty(tickets) &&
-                            tickets.map((i, index) => {
-                                let montant = parseFloat(i.montant).toFixed(2);
-                                return(
-                                    <View style={{flex:1,width:"90%", maxHeight:50, flexDirection:'row', justifyContent:'space-between', alignItems:"flex-start"}} key={index}>
-                                        <View style={{flex:1}}><Text style={{fontSize: 17, fontFamily:'Livvic-Regular'}}>{i.nom}</Text></View>
-                                        <View style={{flex:1, alignItems:'flex-end'}}><Text style={{fontSize: 20, fontFamily:'Livvic-Medium'}}>{montant.replace('.',',')} €</Text></View>
-                                        <View style={{flex:1, alignItems:'flex-end'}}><Fontisto name={"trash"} color="#d32f2f" size={22} onPress={() => {this._removeItem(index, i)}}/></View>
-                                    </View>
-                                )
-                            })
-                            }</View>
-                        <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
-                            <Text style={{fontFamily:'Livvic-Regular', fontSize:22}}>Total : {total.toFixed(2).replace('.',',')} €</Text>
+                }
+                { !loadPay &&
+                    <View style={{flex:4, padding:4, flexDirection:'row', marginTop:10}}>
+                        <View style={{flex:1, height:'95%'}}>
+                            <View style={{flex:1}}>
+                                <Text style={{fontFamily:'Livvic-Medium', fontSize:20}}>1. Sélectionner un
+                                    <Text style={{fontFamily:'Livvic-Bold', fontSize:20}}> produit</Text></Text>
+                            </View>
+                            <View style={{flex:6}}>
+                                <FlatList
+                                    contentContainerStyle={{flexGrow: 1, justifyContent: 'center'}}
+                                    data={produits}
+                                    renderItem={this._renderItem}
+                                    keyExtractor={this._keyExtractor}
+                                    numColumns={2}
+                                />
+                            </View>
+                        </View>
+                        <View style={{flex:1, height:'90%', justifyContent:'center'}}>
+                           <View style={{flex:1}}>
+                                <Text style={{fontFamily:'Livvic-Medium', fontSize:20}}>2. Renseigner le
+                                    <Text style={{fontFamily:'Livvic-Bold', fontSize:20}}> montant</Text>
+                                </Text>
+                            </View>
+                            { showErrMontant && <Text style={styles.textError}>Le montant doit être inférieur à 10 000 € ! </Text>}
+                            { showErrTotal &&  <Text style={styles.textError}>Le montant total doit être inférieur à 10 000 € ! </Text>}
+                            { showSoldeErr &&  <Text style={styles.textError}>Le solde de la carte est insuffisant ! </Text>}
+                            <View style={{flex:6}}>
+                            <CalculatorResponse
+                                first={first}
+                                second={second}
+                                operator={operator}
+                                result={result}
+                                refresh={this.refresh}/>
+                            <CalculatorButtonsContainer handleButtonPress={this.handleButtonPress}/>
+                            <View style={{justifyContent:"center", alignItems:'center'}}>
                             <TouchableOpacity style={{
                                 width: 180,
                                 height: 50,
@@ -699,24 +694,37 @@ class newOrder extends React.Component {
                                               }}>
                                 <Text style={{fontFamily: 'Livvic-Regular', color: '#fff', fontSize: 14}}>Valider</Text>
                             </TouchableOpacity>
+                            </View>
+                            </View>
+                        </View>
+                        <View style={{flex:1}}>
+                            <View style={{flex:2, marginTop:15, justifyContent:'flex-start', alignItems:'center'}}>
+                                <Text style={{fontSize: 20, fontFamily:'Livvic-Medium', marginBottom:20}}>TICKET</Text>
+                                { !_.isEmpty(tickets) &&
+                                tickets.map((i, index) => {
+                                    let montant = parseFloat(i.montant).toFixed(2);
+                                    return(
+                                        <View style={{flex:1,width:"90%", maxHeight:50, flexDirection:'row', justifyContent:'space-between', alignItems:"flex-start"}} key={index}>
+                                            <View style={{flex:1}}><Text style={{fontSize: 17, fontFamily:'Livvic-Regular'}}>{i.nom}</Text></View>
+                                            <View style={{flex:1, alignItems:'flex-end'}}><Text style={{fontSize: 20, fontFamily:'Livvic-Medium'}}>{montant.replace('.',',')} €</Text></View>
+                                            <View style={{flex:1, alignItems:'flex-end'}}><Fontisto name={"trash"} color="#d32f2f" size={22} onPress={() => {this._removeItem(index, i)}}/></View>
+                                        </View>
+                                    )
+                                })
+                                }</View>
+                            <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
+                                <Text style={{fontFamily:'Livvic-Regular', fontSize:22}}>Total : {total.toFixed(2).replace('.',',')} €</Text>
 
-                            {!_.isEmpty(tickets) &&
-                            <TouchableOpacity style={{
-                                width: 180,
-                                height: 50,
-                                backgroundColor: 'green',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                borderRadius: 5,
-                                marginTop: 15
-                            }}
-                                onPress={() => activityStarter.navigeteMpos((value) => this._checkPincode(value))}>
-                                <Text style={{fontFamily: 'Livvic-Regular', color: '#fff', fontSize: 14}}>Payer</Text>
-                            </TouchableOpacity>
-                            }
+                                {!_.isEmpty(tickets) &&
+                                <TouchableOpacity style={{width: 180, height: 50, backgroundColor: 'green', justifyContent: 'center',
+                                    alignItems: 'center', borderRadius: 5, marginTop: 15 }} onPress={() => this._checkKm() }>
+                                    <Text style={{fontFamily: 'Livvic-Regular', color: '#fff', fontSize: 14}}>Payer</Text>
+                                </TouchableOpacity>
+                                }
+                            </View>
                         </View>
                     </View>
-                </View>
+                }
             </View>
         )
     }

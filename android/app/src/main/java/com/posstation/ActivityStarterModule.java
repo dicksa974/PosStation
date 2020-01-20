@@ -124,6 +124,7 @@ class ActivityStarterModule extends ReactContextBaseJavaModule {
                                     resultScan = String.valueOf(pSnrM1);
                                     gl_autoRunning = 0;
                                     call_s8.fw_lcd_dispclear(hdev);
+                                    call_s8.fw_beep(hdev, 5);
                                 }
 
                             }
@@ -1197,8 +1198,7 @@ class ActivityStarterModule extends ReactContextBaseJavaModule {
     }
 
     private void SendUIMessage(char toWhat, String text) {
-         Toast.makeText(getReactApplicationContext(), text, Toast.LENGTH_LONG).show();
-
+         //Toast.makeText(getReactApplicationContext(), text, Toast.LENGTH_LONG).show();
     }
 
     @ReactMethod

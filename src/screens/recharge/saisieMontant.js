@@ -47,7 +47,8 @@ class saisieMontant extends React.Component {
             isResult: false,
             showErrMontant:false,
             showPinErr:false,
-            pincode:""
+            pincode:"",
+            loadingRecharge: false
         };
 
         this.refresh = this.refresh.bind(this);
@@ -220,12 +221,12 @@ class saisieMontant extends React.Component {
 
     _rechargeCarte() {
         if(this.state.pincode === "1234") {
-            this.setState({showPinErr: false});
+            this.setState({showPinErr: false, loadingRecharge:true});
 
             let ticket = {
                 carte: {id: this.state.carte.id},
                 transactions: [{montant: this.state.total}],
-                station: {id: "5ddfa08ecf4de44d374f313f"},
+                station: {id: "5df8f9bb261cf3202ab9a13e"},
                 typeTicket: "RECHARGE"
             };
             console.log(JSON.stringify(ticket));
@@ -241,9 +242,34 @@ class saisieMontant extends React.Component {
             }).then((response) => {
                 console.log(response);
                 if (response.status === 200) {
-                    this.refs.modalAsk.close();
-                    this.refs.modalConfirm.open();
+                    let carte = this.state.carte;
+                    carte.solde = parseFloat(carte.solde) + parseFloat(this.state.total);
+                    fetch(host + "/cartes/"+carte.id, {
+                        method: "PUT",
+                        headers: {
+                            Accept: "application/json",
+                            "Content-Type": "application/json",
+                            Authorization: "Bearer " + this.props.token
+                        },
+                        body: JSON.stringify(carte)
+                    }).then((res) => {
+                        if (res.status === 200) {
+                            this.refs.modalAsk.close();
+                            this.setState({loadingRecharge: false});
+                            this.refs.modalConfirm.open();
+                        } else {
+                            this.setState({loadingRecharge: false});
+                            this.refs.modalAsk.close();
+                            this.refs.modalError.open()
+                        }
+                    }).catch((err) => {
+                        this.setState({loadingRecharge: false});
+                        this.refs.modalAsk.close();
+                        this.refs.modalError.open()
+                    })
+
                 } else {
+                    this.setState({loadingRecharge: false});
                     this.refs.modalAsk.close();
                     this.refs.modalError.open()
                 }
@@ -254,21 +280,39 @@ class saisieMontant extends React.Component {
     }
 
     render() {
-        const { first, second, operator, result, showErrMontant, showPinErr } = this.state;
+        const { first, second, operator, result, showErrMontant, showPinErr, loadingRecharge } = this.state;
         let btn = "Valider";
         return(
             <View style={{flex:1, backgroundColor:'#fafafa'}}>
                 <Modal style={{ height: 350, width: 450, backgroundColor:'#fff', borderRadius:4, padding:5 }} position={"center"} ref={"modalAsk"} swipeToClose={false} backdropPressToClose={false} backdrop={true} >
-                    <View style={{flex: 1, justifyContent:'center', alignItems:'center'}}>
-                        <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
-                            <FontAwesome5 name={"question-circle"} color={"#fb8c00"} size={35} style={{marginTop:15}}/>
-                            <Text style={{fontFamily:'Livvic-Medium', color:'#757575', fontSize:22, marginTop:10}}>Recharge Carte</Text>
+                    {loadingRecharge &&
+                    <View style={{flex: 1, backgroundColor: '#fafafa', justifyContent:'center', alignItems:'center'}}>
+                        <ActivityIndicator color={'blue'} size={"large"}/>
+                    </View>
+                    }
+                    {!loadingRecharge &&
+                    <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+                        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+                            <FontAwesome5 name={"question-circle"} color={"#fb8c00"} size={35} style={{marginTop: 15}}/>
+                            <Text style={{fontFamily: 'Livvic-Medium', color: '#757575', fontSize: 22, marginTop: 10}}>Recharge
+                                Carte</Text>
                         </View>
-                        <View style={{flex:2, justifyContent:'center', alignItems:'center', marginTop:20}}>
-                            <View style={{flex:1, marginTop:15 }}>
-                                <Text style={{fontFamily: 'Livvic-Regular', color: '#757575', fontSize: 17, textAlign: 'center'}}>
-                                    Confirmer le montant de {this.state.total.toFixed(2).replace('.',',')} € pour</Text>
-                                <Text style={{fontFamily: 'Livvic-Regular', color: '#757575', fontSize: 17, textAlign: 'center'}}>
+                        <View style={{flex: 2, justifyContent: 'center', alignItems: 'center', marginTop: 20}}>
+                            <View style={{flex: 1, marginTop: 15}}>
+                                <Text style={{
+                                    fontFamily: 'Livvic-Regular',
+                                    color: '#757575',
+                                    fontSize: 17,
+                                    textAlign: 'center'
+                                }}>
+                                    Confirmer le montant de {this.state.total.toFixed(2).replace('.', ',')} €
+                                    pour</Text>
+                                <Text style={{
+                                    fontFamily: 'Livvic-Regular',
+                                    color: '#757575',
+                                    fontSize: 17,
+                                    textAlign: 'center'
+                                }}>
                                     la carte n°{this.state.carte.serialNumber} ?</Text>
                             </View>
                             <View style={{flex: 1, width: 350, justifyContent: 'center'}}>
@@ -291,17 +335,45 @@ class saisieMontant extends React.Component {
                                 {showPinErr && <Text style={styles.textError}> Erreur Pin Code </Text>}
                             </View>
                         </View>
-                        <View style={{flex:1, flexDirection:'row', justifyContent:'space-around', alignItems:'flex-end', marginBottom:10, marginTop:5}}>
-                            <TouchableOpacity style={{width: 135, height: 45, backgroundColor:'green', justifyContent:'center', alignItems:'center', borderRadius:5}}
-                                              onPress={() => { this._rechargeCarte();} }>
-                                <Text style={{fontFamily:'Livvic-Regular', color:'#fff', fontSize:16}}>Confirmer</Text>
+                        <View style={{
+                            flex: 1,
+                            flexDirection: 'row',
+                            justifyContent: 'space-around',
+                            alignItems: 'flex-end',
+                            marginBottom: 10,
+                            marginTop: 5
+                        }}>
+                            <TouchableOpacity style={{
+                                width: 135,
+                                height: 45,
+                                backgroundColor: 'green',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                borderRadius: 5
+                            }}
+                                              onPress={() => {
+                                                  this._rechargeCarte();
+                                              }}>
+                                <Text
+                                    style={{fontFamily: 'Livvic-Regular', color: '#fff', fontSize: 16}}>Confirmer</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={{width: 135, height: 45, marginLeft:20,  backgroundColor:'red', justifyContent:'center', alignItems:'center', borderRadius:5}}
-                                              onPress={() => { this.refs.modalAsk.close();}}>
-                                <Text style={{fontFamily:'Livvic-Regular', color:'#fff', fontSize:16}}>Annuler</Text>
+                            <TouchableOpacity style={{
+                                width: 135,
+                                height: 45,
+                                marginLeft: 20,
+                                backgroundColor: 'red',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                borderRadius: 5
+                            }}
+                                              onPress={() => {
+                                                  this.refs.modalAsk.close();
+                                              }}>
+                                <Text style={{fontFamily: 'Livvic-Regular', color: '#fff', fontSize: 16}}>Annuler</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
+                    }
                 </Modal>
                 <Modal style={{ height: 250, width: 400, backgroundColor:'#fff', borderRadius:4, padding:5 }} position={"center"} ref={"modalConfirm"} swipeToClose={false} backdropPressToClose={false} backdrop={true} >
                     <View style={{flex: 1, justifyContent:'center', alignItems:'center'}}>
@@ -338,7 +410,7 @@ class saisieMontant extends React.Component {
                     </View>
                 </Modal>
                 <View style={{width:"90%", height:1, backgroundColor: "#bdbdbd", marginLeft:'2%', justifyContent:'center'}}/>
-                <View style={{flex:1, height:'90%', width:'40%', marginLeft:'25%', marginTop:'10%'}}>
+                <View style={{flex:1, height:'90%', width:'40%', marginLeft:'30%', marginTop:'10%'}}>
                     { showErrMontant && <Text style={styles.textError}>Le montant doit être inférieur à 10 000 € ! </Text>}
                     <CalculatorResponse
                         first={first}
@@ -347,7 +419,7 @@ class saisieMontant extends React.Component {
                         result={result}
                         refresh={this.refresh}/>
                     <CalculatorButtonsContainer handleButtonPress={this.handleButtonPress}/>
-                    <View>
+                    <View style={{marginTop:10, marginLeft:50}}>
                         <TouchableOpacity style={{
                             width: 180,
                             height: 50,

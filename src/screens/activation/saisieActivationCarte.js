@@ -199,7 +199,7 @@ class saisieActivationCarte extends React.Component {
     _activeCarte(){
         if(this.state.pincode === "1234") {
             this.setState({showPinErr: false, loadingPay:true});
-            let ticket = { carte: {id : this.state.carte.id}, station: {id: "5ddfa08ecf4de44d374f313f"}, transactions: [{ montant: 0 }], typeTicket: "ACTIVATION"};
+            let ticket = { carte: {id : this.state.carte.id}, station: {id: "5df8f9bb261cf3202ab9a13e"}, transactions: [{ montant: 0 }], typeTicket: "ACTIVATION"};
             console.log("Activation carte ",ticket);
             fetch(host + "/tickets/active", {
                 method: "POST",

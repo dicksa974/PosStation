@@ -37,36 +37,6 @@ class SignIn extends React.Component {
     async _getLogIn () {
         this.setState({loading: true});
 
-      /*  if(this.state.username === "stleu1" && this.state.password === "olacard147#"){
-            let station = { num: "101", name: "Saint-Leu", password : "147#"};
-            this.props.navigation.navigate('Home', {station: station});
-            //SAVE SESSION
-            let authorization = station.name;
-            const action = { type : "LOGGED_IN", value : authorization};
-            this.props.dispatch(action);
-        }
-        else if(this.state.username === "montvert1" && this.state.password === "olacard775#") {
-            let station = { num: "100", name: "MONVERT LINA", password : "775#"};
-            this.props.navigation.navigate('Home', {station: station});
-
-            //SAVE SESSION
-            let authorization = station.name;
-            const action = { type : "LOGGED_IN", value : authorization};
-            this.props.dispatch(action);
-        }
-        else if(this.state.username === "terresainte1" && this.state.password === "olacard771#") {
-            let station = { num: "100", name: "TERRE SAINTE", password : "771#"};
-            this.props.navigation.navigate('Home', {station: station});
-
-            //SAVE SESSION
-            let authorization = station.name;
-            const action = { type : "LOGGED_IN", value : authorization};
-            this.props.dispatch(action);
-        }
-        else {
-            this.setState({strErr: true, loading: false})
-        }*/
-
         let data = {
             grant_type: "password",
             username: this.state.username,

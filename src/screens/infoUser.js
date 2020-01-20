@@ -4,6 +4,8 @@ import { Avatar, Icon, Card } from 'react-native-elements';
 import Fontisto from "react-native-vector-icons/Fontisto";
 import { host } from "../utils/constants";
 import moment from "moment";
+import Modal from "react-native-modalbox";
+import FontAwesome5 from "react-native-vector-icons/FontAwesome5";
 
 const { width, height } = Dimensions.get('window');
 
@@ -25,7 +27,6 @@ export default class infoUser extends React.Component {
         this.state = {
             loading: true,
             currentItem: {},
-            opposition: false,
             station: {},
             showErr: false
         };
@@ -35,13 +36,11 @@ export default class infoUser extends React.Component {
         const { navigation } = this.props;
         const i = navigation.getParam('item', {});
         const s = navigation.getParam('station', {});
-        console.log(i);
         this._checkRestrictions(i);
-        let o = false;
-      /*  if(i.dateOpposition.trim().length !== 0){
-            o = true;
-        }*/
-        this.setState({ currentItem: i, loading: false, opposition: o, station: s });
+        this.setState({ currentItem: i, loading: false, station: s });
+        if(!i.hors_parc){
+            this.refs.modalImmat.open();
+        }
     }
 
     _checkRestrictions(i){
@@ -67,7 +66,7 @@ export default class infoUser extends React.Component {
                         }
                     }
                 case "DIMANCHE":
-                    if(date.day() === 7) {
+                    if(date.day() === 0) {
                         var hDebut = [element.heure_debut.slice(0, 2), ":", element.heure_debut.slice(2)].join('');
                         var hFin = [element.heure_fin.slice(0, 2), ":", element.heure_fin.slice(2)].join('');
                         if(hour>= hDebut && hour<= hFin){
@@ -114,6 +113,25 @@ export default class infoUser extends React.Component {
         return (
             <View style={{flex:1, backgroundColor:'#fafafa'}}>
                 <View style={{width:"94%", height:1, backgroundColor: "#bdbdbd", marginLeft:'3%', marginTop:'6%'}}/>
+                <Modal style={{  height: 250, width: 400, backgroundColor:'#fff', borderRadius:4, padding:5 }} ref={"modalImmat"} swipeToClose={false} backdropPressToClose={false}>
+                    {!loading &&
+                    <View style={{flex: 1, justifyContent:'center', alignItems:'center'}}>
+                        <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
+                            <Text style={{fontSize: 20, fontFamily: 'Livvic-Regular', marginTop: 10, marginLeft:15}}>Merci de contrôler la plaque</Text>
+                        </View>
+                        <View style={{flex:1, flexDirection:'row', justifyContent:'center', alignItems:'center'}}>
+                            <Fontisto name={"car"} style={{marginTop:5}} size={26} color='#03498e'/>
+                            <Text style={{fontSize: 20, fontFamily: 'Livvic-Regular', marginTop: 10, color:'#03498e', marginLeft:15}}>{currentItem.vehicule.immatriculation}</Text>
+                        </View>
+                        <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
+                            <TouchableOpacity style={{width: 125, height: 45, marginTop:15, backgroundColor:'green', justifyContent:'center', alignItems:'center', borderRadius:5}}
+                                              onPress={() => {this.refs.modalImmat.close();}}>
+                                <Text style={{fontFamily:'Livvic-Regular', color:'#fff', fontSize:16}}>Valider</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                    }
+                </Modal>
                 {loading &&
                 <View style={{flex: 1, backgroundColor: '#fafafa', justifyContent:'center', alignItems:'center'}}>
                     <ActivityIndicator color={'blue'} size={"large"}/>
@@ -123,13 +141,11 @@ export default class infoUser extends React.Component {
                     <View style={{flex: 1, marginTop: '2%', alignItems: 'center'}}>
                         { showErr &&  <Text style={{textAlign: 'center', color: '#e53935', fontSize: 16, fontFamily:'Livvic-Regular'}}>
                             {text} </Text>}
-                        <Card containerStyle={{width: "80%", height: height / 1.5, alignItems: 'center', borderRadius: 6 }}>
-                            <View style={{flex: 1, backgroundColor:color, justifyContent:'center', alignItems:'center'}}>
-                                <Avatar size="large" rounded overlayContainerStyle={{backgroundColor: '#fff'}}
-                                icon={{name: 'person', type: 'fontisto', color:'#9e9e9e'}} activeOpacity={0.7}/>
-                                <Text style={{fontSize: 16, fontFamily: 'Livvic-Regular', marginTop: 10, color:'#fff'}}>{currentItem.client.entreprise.enseigne}</Text>
+                        <View style={{width: "80%", height: height / 1.5, alignItems: 'center', borderRadius: 6, borderColor:"#e0e0e0", borderWidth:1 }}>
+                            <View style={{flex: 1,width:"100%", backgroundColor:color, justifyContent:'center', alignItems:'center'}}>
+                                <Text style={{fontSize: 20, fontFamily: 'Livvic-Regular', marginTop: 10, color:'#fff'}}>{currentItem.client.entreprise.enseigne}</Text>
                             </View>
-                            <View style={{width: "90%", height: 1, backgroundColor: "#000", marginLeft: '2%'}}/>
+                            <View style={{width: "95%", height: 1, backgroundColor: "#e0e0e0", marginLeft: '2%'}}/>
                             <View style={{flex: 2, width: "100%", flexDirection:'row', justifyContent:'center', alignItems:'center'}}>
                                     <View style={{flex:2}}>
                                         <View style={{flex:1, flexDirection:'row'}}>
@@ -189,16 +205,42 @@ export default class infoUser extends React.Component {
                                                     <Text style={{fontSize: 16, fontFamily: 'Livvic-Regular', marginTop: 10, color:'#757575', marginLeft:15}}>TYPE</Text>
                                                 </View>
                                                 <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
-                                                    <Text style={{fontSize: 12, fontFamily: 'Livvic-Regular', marginTop: 10, color:'#03498e', marginLeft:5}}>{currentItem.typePayement}</Text>
+                                                    {currentItem.typePayement === "CREDIT_CLIENT_CLASSIQUE" &&
+                                                    <Text style={{
+                                                        fontSize: 14,
+                                                        fontFamily: 'Livvic-Regular',
+                                                        marginTop: 10,
+                                                        color: '#03498e',
+                                                        marginLeft: 5
+                                                    }}>PRO</Text>
+                                                    }
+                                                    {currentItem.typePayement === "PME" &&
+                                                    <Text style={{
+                                                        fontSize: 14,
+                                                        fontFamily: 'Livvic-Regular',
+                                                        marginTop: 10,
+                                                        color: '#03498e',
+                                                        marginLeft: 5
+                                                    }}>PRE_PAYEE</Text>
+                                                    }
+                                                    {currentItem.typePayement === "CARTE_PRE_PAYEE" &&
+                                                    <Text style={{
+                                                        fontSize: 14,
+                                                        fontFamily: 'Livvic-Regular',
+                                                        marginTop: 10,
+                                                        color: '#03498e',
+                                                        marginLeft: 5
+                                                    }}>PORTE MONNAIE</Text>
+                                                    }
                                                 </View>
                                             </View>
                                         </View>
                                     </View>
                         </View>
-                        </Card>
+                        </View>
                         <View style={{flex:1,width:"100%", justifyContent:'center', alignItems:'flex-end'}}>
                             {!showErr &&
-                            <View style={{flex:1}}>
+                            <View style={{flex:1, marginTop:15}}>
                                 {currentItem.status === "ACTIVE" &&
                                     <TouchableOpacity style={{
                                         width: 160, height: 45, backgroundColor: "#43a047",
